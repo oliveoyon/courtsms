@@ -205,7 +205,7 @@
                             </a>
                         </li>
 
-                        <!-- User Management (Roles & Permissions) -->
+                        <!-- User Management -->
                         <li class="nav-item">
                             <a href="#" class="nav-link">
                                 <i class="nav-icon bi bi-people"></i>
@@ -215,38 +215,84 @@
                                 </p>
                             </a>
                             <ul class="nav nav-treeview">
+                                @can('View Permission Groups')
+                                    <li class="nav-item">
+                                        <a href="{{ route('admin.permission-groups.index') }}" class="nav-link">
+                                            <i class="nav-icon bi bi-diagram-3"></i>
+                                            <p>Permission Groups</p>
+                                        </a>
+                                    </li>
+                                @endcan
 
-                                <li class="nav-item">
-                                    <a href="{{ route('admin.permission-groups.index') }}" class="nav-link">
-                                        <i class="nav-icon bi bi-diagram-3"></i>
-                                        <p>Permission Groups</p>
-                                    </a>
-                                </li>
+                                @can('View Permissions')
+                                    <li class="nav-item">
+                                        <a href="{{ route('admin.permissions.index') }}" class="nav-link">
+                                            <i class="nav-icon bi bi-shield-lock"></i>
+                                            <p>Permissions</p>
+                                        </a>
+                                    </li>
+                                @endcan
 
-                                <li class="nav-item">
-                                    <a href="{{ route('admin.permissions.index') }}" class="nav-link">
-                                        <i class="nav-icon bi bi-shield-lock"></i>
-                                        <p>Permissions</p>
-                                    </a>
-                                </li>
+                                @can('View Roles')
+                                    <li class="nav-item">
+                                        <a href="{{ route('admin.roles.index') }}" class="nav-link">
+                                            <i class="nav-icon bi bi-person-badge"></i>
+                                            <p>Roles</p>
+                                        </a>
+                                    </li>
+                                @endcan
 
-                                <li class="nav-item">
-                                    <a href="{{ route('admin.roles.index') }}" class="nav-link">
-                                        <i class="nav-icon bi bi-person-badge"></i>
-                                        <p>Roles</p>
-                                    </a>
-                                </li>
-
-                                <li class="nav-item">
-                                    <a href="{{ route('admin.users.index') }}" class="nav-link">
-                                        <i class="nav-icon bi bi-people"></i>
-                                        <p>Users</p>
-                                    </a>
-                                </li>
-
+                                @can('View Users')
+                                    <li class="nav-item">
+                                        <a href="{{ route('admin.users.index') }}" class="nav-link">
+                                            <i class="nav-icon bi bi-people"></i>
+                                            <p>Users</p>
+                                        </a>
+                                    </li>
+                                @endcan
                             </ul>
-
                         </li>
+
+                        <!-- Master Data: Divisions / Districts / Courts -->
+                        @canany(['View Division', 'View District', 'View Court'])
+                            <li class="nav-item">
+                                <a href="#" class="nav-link">
+                                    <i class="nav-icon bi bi-building"></i>
+                                    <p>
+                                        Master Data
+                                        <i class="nav-arrow bi bi-chevron-right"></i>
+                                    </p>
+                                </a>
+                                <ul class="nav nav-treeview">
+                                    @can('View Division')
+                                        <li class="nav-item">
+                                            <a href="{{ route('admin.divisions.index') }}" class="nav-link">
+                                                <i class="nav-icon bi bi-diagram-3-fill"></i>
+                                                <p>Divisions</p>
+                                            </a>
+                                        </li>
+                                    @endcan
+
+                                    @can('View District')
+                                        <li class="nav-item">
+                                            <a href="{{ route('admin.districts.index') }}" class="nav-link">
+                                                <i class="nav-icon bi bi-geo-alt-fill"></i>
+                                                <p>Districts</p>
+                                            </a>
+                                        </li>
+                                    @endcan
+
+                                    @can('View Court')
+                                        <li class="nav-item">
+                                            <a href="{{ route('admin.courts.index') }}" class="nav-link">
+                                                <i class="nav-icon bi bi-gavel"></i>
+                                                <p>Courts</p>
+                                            </a>
+                                        </li>
+                                    @endcan
+                                </ul>
+                            </li>
+                        @endcanany
 
                         <!-- Example: Theme Generator -->
                         <li class="nav-item">
@@ -260,6 +306,7 @@
                     <!--end::Sidebar Menu-->
                 </nav>
             </div>
+
 
 
         </aside>
@@ -310,47 +357,47 @@
     </script>
 
     <script>
-document.addEventListener("DOMContentLoaded", function () {
-    const currentUrl = window.location.href;
-    const sidebarLinks = document.querySelectorAll('.sidebar-menu a.nav-link');
+        document.addEventListener("DOMContentLoaded", function() {
+            const currentUrl = window.location.href;
+            const sidebarLinks = document.querySelectorAll('.sidebar-menu a.nav-link');
 
-    sidebarLinks.forEach(link => {
-        // Check if the current link matches the URL
-        if (currentUrl.includes(link.href)) {
-            // Highlight the link itself
-            link.classList.add('active');
+            sidebarLinks.forEach(link => {
+                // Check if the current link matches the URL
+                if (currentUrl.includes(link.href)) {
+                    // Highlight the link itself
+                    link.classList.add('active');
 
-            // Find the closest nav-treeview (submenu)
-            let parentTree = link.closest('.nav-treeview');
-            if (parentTree) {
-                // Expand this submenu
-                parentTree.style.display = 'block';
+                    // Find the closest nav-treeview (submenu)
+                    let parentTree = link.closest('.nav-treeview');
+                    if (parentTree) {
+                        // Expand this submenu
+                        parentTree.style.display = 'block';
 
-                // Find the parent <li> with treeview
-                const parentItem = parentTree.closest('.nav-item');
-                if (parentItem) {
-                    parentItem.classList.add('menu-open'); // keep it open
-                    const parentLink = parentItem.querySelector(':scope > a.nav-link');
-                    if (parentLink) parentLink.classList.add('active'); // highlight parent link
-                }
+                        // Find the parent <li> with treeview
+                        const parentItem = parentTree.closest('.nav-item');
+                        if (parentItem) {
+                            parentItem.classList.add('menu-open'); // keep it open
+                            const parentLink = parentItem.querySelector(':scope > a.nav-link');
+                            if (parentLink) parentLink.classList.add('active'); // highlight parent link
+                        }
 
-                // Repeat for multi-level menus
-                let ancestorTree = parentItem ? parentItem.closest('.nav-treeview') : null;
-                while (ancestorTree) {
-                    ancestorTree.style.display = 'block';
-                    const ancestorItem = ancestorTree.closest('.nav-item');
-                    if (ancestorItem) {
-                        ancestorItem.classList.add('menu-open');
-                        const ancestorLink = ancestorItem.querySelector(':scope > a.nav-link');
-                        if (ancestorLink) ancestorLink.classList.add('active');
+                        // Repeat for multi-level menus
+                        let ancestorTree = parentItem ? parentItem.closest('.nav-treeview') : null;
+                        while (ancestorTree) {
+                            ancestorTree.style.display = 'block';
+                            const ancestorItem = ancestorTree.closest('.nav-item');
+                            if (ancestorItem) {
+                                ancestorItem.classList.add('menu-open');
+                                const ancestorLink = ancestorItem.querySelector(':scope > a.nav-link');
+                                if (ancestorLink) ancestorLink.classList.add('active');
+                            }
+                            ancestorTree = ancestorItem ? ancestorItem.closest('.nav-treeview') : null;
+                        }
                     }
-                    ancestorTree = ancestorItem ? ancestorItem.closest('.nav-treeview') : null;
                 }
-            }
-        }
-    });
-});
-</script>
+            });
+        });
+    </script>
 
 </body>
 

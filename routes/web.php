@@ -1,6 +1,9 @@
 <?php
 
+use App\Http\Controllers\Admin\CourtController;
 use App\Http\Controllers\Admin\DashboardController;
+use App\Http\Controllers\Admin\DistrictController;
+use App\Http\Controllers\Admin\DivisionController;
 use App\Http\Controllers\Admin\PermissionController;
 use App\Http\Controllers\Admin\PermissionGroupController;
 use App\Http\Controllers\Admin\RoleController;
@@ -59,6 +62,10 @@ Route::prefix('admin')->name('admin.')->middleware(['auth'])->group(function () 
 
 
     Route::resource('users', UserController::class);
+    Route::resource('divisions', DivisionController::class);
+    Route::resource('districts', DistrictController::class);
+    Route::resource('courts', CourtController::class);
+
 
 
 });
