@@ -4,8 +4,8 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
-use App\Models\Admin\Court;
-use App\Models\Admin\District;
+use App\Models\Court;
+use App\Models\District;
 use Illuminate\Validation\Rule;
 
 class CourtController extends Controller

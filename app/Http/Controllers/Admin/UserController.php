@@ -5,8 +5,13 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use App\Models\User;
+
+use App\Models\District;
+use App\Models\Court;
+
 use Spatie\Permission\Models\Role;
 use App\Models\PermissionGroup;
+use App\Models\Division;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
 use Spatie\Permission\PermissionRegistrar;
@@ -38,7 +43,8 @@ class UserController extends Controller
 
         $permissionGroups = PermissionGroup::with('permissions')->get();
 
-        // Empty arrays for new user
+        $divisions = Division::with('districts.courts')->get();
+
         $userRoles = [];
         $directPermissions = [];
 
@@ -46,16 +52,20 @@ class UserController extends Controller
             'roles',
             'permissionGroups',
             'userRoles',
-            'directPermissions'
+            'directPermissions',
+            'divisions'
         ));
     }
-
 
     public function store(Request $request)
     {
         $request->validate([
             'name' => 'required|string|max:255',
             'email' => 'required|email|unique:users,email',
+            'phone_number' => 'nullable|string|max:20',
+            'division_id' => 'nullable|exists:divisions,id',
+            'district_id' => 'nullable|exists:districts,id',
+            'court_id' => 'nullable|exists:courts,id',
             'password' => 'required|string|min:8|confirmed',
             'roles' => 'array',
             'permissions' => 'array',
@@ -64,6 +74,10 @@ class UserController extends Controller
         $user = User::create([
             'name' => $request->name,
             'email' => $request->email,
+            'phone_number' => $request->phone_number,
+            'division_id' => $request->division_id,
+            'district_id' => $request->district_id,
+            'court_id' => $request->court_id,
             'password' => Hash::make($request->password),
             'is_active' => $request->has('is_active') ? true : false,
         ]);
@@ -76,7 +90,6 @@ class UserController extends Controller
             $user->givePermissionTo($request->permissions);
         }
 
-        // Clear Spatie permission cache for instant sync
         app()[PermissionRegistrar::class]->forgetCachedPermissions();
 
         if ($request->expectsJson()) {
@@ -95,9 +108,10 @@ class UserController extends Controller
             : Role::where('name', '!=', 'Super Admin')->get();
 
         $permissionGroups = PermissionGroup::with('permissions')->get();
-        $userRoles = $user->roles->pluck('name')->toArray();
 
-        // Only direct permissions
+        $divisions = Division::with('districts.courts')->get();
+
+        $userRoles = $user->roles->pluck('name')->toArray();
         $directPermissions = $user->permissions->pluck('name')->toArray();
 
         return view('admin.rbac.users.create_edit', compact(
@@ -105,16 +119,20 @@ class UserController extends Controller
             'roles',
             'permissionGroups',
             'userRoles',
-            'directPermissions'
+            'directPermissions',
+            'divisions'
         ));
     }
-
 
     public function update(Request $request, User $user)
     {
         $request->validate([
             'name' => 'required|string|max:255',
             'email' => 'required|email|unique:users,email,' . $user->id,
+            'phone_number' => 'nullable|string|max:20',
+            'division_id' => 'nullable|exists:divisions,id',
+            'district_id' => 'nullable|exists:districts,id',
+            'court_id' => 'nullable|exists:courts,id',
             'password' => 'nullable|string|min:8|confirmed',
             'roles' => 'array',
             'permissions' => 'array',
@@ -123,17 +141,17 @@ class UserController extends Controller
         $user->update([
             'name' => $request->name,
             'email' => $request->email,
+            'phone_number' => $request->phone_number,
+            'division_id' => $request->division_id,
+            'district_id' => $request->district_id,
+            'court_id' => $request->court_id,
             'password' => $request->password ? Hash::make($request->password) : $user->password,
             'is_active' => $request->has('is_active') ? true : false,
         ]);
 
-        // Sync roles
         $user->syncRoles($request->roles ?? []);
-
-        // Sync direct permissions
         $user->syncPermissions($request->permissions ?? []);
 
-        // Clear Spatie permission cache for instant sync
         app()[PermissionRegistrar::class]->forgetCachedPermissions();
 
         if ($request->expectsJson()) {
@@ -153,6 +171,4 @@ class UserController extends Controller
 
         return redirect()->route('admin.users.index')->with('success', 'User deleted successfully');
     }
-
-    
 }

@@ -4,7 +4,7 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
-use App\Models\Admin\District;
+use App\Models\District;
 use App\Models\Division as ModelsDivision;
 use Illuminate\Validation\Rule;
 
@@ -74,5 +74,12 @@ class DistrictController extends Controller
             'success' => true,
             'message' => 'District deleted successfully!'
         ]);
+    }
+
+    public function courts(District $district)
+    {
+        $courts = $district->courts()->get();
+
+        return response()->json($courts);
     }
 }

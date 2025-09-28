@@ -37,7 +37,8 @@
                                     {{ $user->is_active ? 'Active' : 'Inactive' }}
                                 </span>
                             </div>
-                            <p class="text-muted mb-2">{{ $user->email }}</p>
+                            <p class="text-muted mb-1">{{ $user->email }}</p>
+                            <p class="text-muted mb-2">{{ $user->phone_number ?? 'N/A' }}</p> <!-- Added phone_number -->
 
                             <!-- Roles -->
                             <div class="mb-2">

@@ -20,7 +20,6 @@
 
 <div class="app-content">
     <div class="container-fluid">
-
         <div class="row g-4">
             <div class="col-12">
 
@@ -33,13 +32,24 @@
                         <div class="card-header bg-light fw-semibold">Basic Information</div>
                         <div class="card-body">
                             <div class="row g-3">
-                                <div class="col-md-6">
+                                <div class="col-md-3">
                                     <label class="form-label">Name</label>
                                     <input type="text" name="name" class="form-control" value="{{ old('name', $user->name ?? '') }}" required>
                                 </div>
-                                <div class="col-md-6">
+                                <div class="col-md-3">
                                     <label class="form-label">Email</label>
                                     <input type="email" name="email" class="form-control" value="{{ old('email', $user->email ?? '') }}" required>
+                                </div>
+                                <div class="col-md-3">
+                                    <label class="form-label">Phone Number</label>
+                                    <input type="text" name="phone_number" class="form-control" value="{{ old('phone_number', $user->phone_number ?? '') }}">
+                                </div>
+                                <div class="col-md-3">
+                                    <label class="form-label">Active</label>
+                                    <div class="form-check form-switch">
+                                        <input class="form-check-input" type="checkbox" name="is_active" id="is_active" {{ isset($user) && $user->is_active ? 'checked' : '' }}>
+                                        <label class="form-check-label" for="is_active">Active</label>
+                                    </div>
                                 </div>
                             </div>
 
@@ -54,14 +64,47 @@
                                 </div>
                             </div>
 
+                            <!-- Division / District / Court -->
                             <div class="row g-3 mt-3">
-                                <div class="col-md-6 d-flex align-items-center">
-                                    <div class="form-check form-switch">
-                                        <input class="form-check-input" type="checkbox" name="is_active" id="is_active" {{ isset($user) && $user->is_active ? 'checked' : '' }}>
-                                        <label class="form-check-label" for="is_active">Active</label>
-                                    </div>
+                                <div class="col-md-4">
+                                    <label class="form-label">Division</label>
+                                    <select name="division_id" id="division_id" class="form-select">
+                                        <option value="">Select Division</option>
+                                        @foreach($divisions as $division)
+                                            <option value="{{ $division->id }}" {{ (old('division_id', $user->division_id ?? '') == $division->id) ? 'selected' : '' }}>
+                                                {{ $division->name }}
+                                            </option>
+                                        @endforeach
+                                    </select>
+                                </div>
+                                <div class="col-md-4">
+                                    <label class="form-label">District</label>
+                                    <select name="district_id" id="district_id" class="form-select">
+                                        <option value="">Select District</option>
+                                        @if(isset($user) && $user->division)
+                                            @foreach($user->division->districts as $district)
+                                                <option value="{{ $district->id }}" {{ (old('district_id', $user->district_id) == $district->id) ? 'selected' : '' }}>
+                                                    {{ $district->name }}
+                                                </option>
+                                            @endforeach
+                                        @endif
+                                    </select>
+                                </div>
+                                <div class="col-md-4">
+                                    <label class="form-label">Court</label>
+                                    <select name="court_id" id="court_id" class="form-select">
+                                        <option value="">Select Court</option>
+                                        @if(isset($user) && $user->district)
+                                            @foreach($user->district->courts as $court)
+                                                <option value="{{ $court->id }}" {{ (old('court_id', $user->court_id) == $court->id) ? 'selected' : '' }}>
+                                                    {{ $court->name }}
+                                                </option>
+                                            @endforeach
+                                        @endif
+                                    </select>
                                 </div>
                             </div>
+
                         </div>
                     </div>
 
@@ -184,6 +227,46 @@ document.addEventListener('DOMContentLoaded', function(){
                     .catch(err=>console.error(err));
             });
         });
+    });
+
+    // Division → District → Court dependency
+    const divisionSelect = document.getElementById('division_id');
+    const districtSelect = document.getElementById('district_id');
+    const courtSelect = document.getElementById('court_id');
+
+    divisionSelect?.addEventListener('change', function(){
+        const divisionId = this.value;
+        districtSelect.innerHTML = '<option value="">Select District</option>';
+        courtSelect.innerHTML = '<option value="">Select Court</option>';
+        if(!divisionId) return;
+
+        fetch('{{ url("admin/divisions") }}/'+divisionId+'/districts')
+            .then(res=>res.json())
+            .then(data=>{
+                data.forEach(d=>{
+                    const opt = document.createElement('option');
+                    opt.value = d.id;
+                    opt.textContent = d.name;
+                    districtSelect.appendChild(opt);
+                });
+            });
+    });
+
+    districtSelect?.addEventListener('change', function(){
+        const districtId = this.value;
+        courtSelect.innerHTML = '<option value="">Select Court</option>';
+        if(!districtId) return;
+
+        fetch('{{ url("admin/districts") }}/'+districtId+'/courts')
+            .then(res=>res.json())
+            .then(data=>{
+                data.forEach(c=>{
+                    const opt = document.createElement('option');
+                    opt.value = c.id;
+                    opt.textContent = c.name;
+                    courtSelect.appendChild(opt);
+                });
+            });
     });
 
     // AJAX form submission

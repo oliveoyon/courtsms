@@ -1,16 +1,15 @@
 <?php
 
-namespace App\Models\Admin;
-
-use Illuminate\Database\Eloquent\Factories\HasFactory;
+namespace App\Models;
 use Illuminate\Database\Eloquent\Model;
 
 class Court extends Model
 {
-    use HasFactory;
+    protected $fillable = ['district_id', 'name'];
 
-    protected $fillable = ['name', 'district_id'];
-
+    /**
+     * A Court belongs to a District
+     */
     public function district()
     {
         return $this->belongsTo(District::class);

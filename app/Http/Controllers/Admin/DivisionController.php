@@ -76,4 +76,12 @@ class DivisionController extends Controller
             'message' => 'Division deleted successfully!'
         ]);
     }
+
+    public function districts(Division $division)
+    {
+        // eager load courts too if needed
+        $districts = $division->districts()->with('courts')->get();
+
+        return response()->json($districts);
+    }
 }

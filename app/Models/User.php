@@ -22,6 +22,9 @@ class User extends Authenticatable
         'email',
         'password',
         'is_active',
+        'division_id',
+        'district_id',
+        'court_id',
     ];
 
     /**
@@ -45,5 +48,21 @@ class User extends Authenticatable
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
         ];
+    }
+
+    // Relationships
+    public function division()
+    {
+        return $this->belongsTo(Division::class);
+    }
+
+    public function district()
+    {
+        return $this->belongsTo(District::class);
+    }
+
+    public function court()
+    {
+        return $this->belongsTo(Court::class);
     }
 }

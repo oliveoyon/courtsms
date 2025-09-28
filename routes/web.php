@@ -65,9 +65,8 @@ Route::prefix('admin')->name('admin.')->middleware(['auth'])->group(function () 
     Route::resource('divisions', DivisionController::class);
     Route::resource('districts', DistrictController::class);
     Route::resource('courts', CourtController::class);
-
-
-
+    Route::get('divisions/{division}/districts', [DivisionController::class, 'districts']);
+    Route::get('districts/{district}/courts', [DistrictController::class, 'courts']);
 });
 
-require __DIR__.'/auth.php';
+require __DIR__ . '/auth.php';
