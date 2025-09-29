@@ -28,15 +28,17 @@ class DivisionController extends Controller
     public function store(Request $request)
     {
         $validated = $request->validate([
-            'name' => 'required|unique:divisions,name',
+            'name_en'   => 'required|unique:divisions,name_en',
+            'name_bn'   => 'required|unique:divisions,name_bn',
+            'is_active' => 'boolean',
         ]);
 
         $division = Division::create($validated);
 
         return response()->json([
-            'success' => true,
+            'success'  => true,
             'division' => $division,
-            'message' => 'Division created successfully!'
+            'message'  => __('messages.success_create')
         ]);
     }
 
@@ -53,35 +55,44 @@ class DivisionController extends Controller
         $division = Division::findOrFail($id);
 
         $validated = $request->validate([
-            'name' => ['required', Rule::unique('divisions')->ignore($division->id)],
+            'name_en'   => ['required', Rule::unique('divisions', 'name_en')->ignore($division->id)],
+            'name_bn'   => ['required', Rule::unique('divisions', 'name_bn')->ignore($division->id)],
+            'is_active' => 'boolean',
         ]);
 
         $division->update($validated);
 
         return response()->json([
-            'success' => true,
+            'success'  => true,
             'division' => $division,
-            'message' => 'Division updated successfully!'
+            'message'  => __('messages.success_update')
         ]);
     }
 
-    // Delete division via AJAX
+    // Delete division via AJAX (safe delete)
     public function destroy($id)
     {
-        $division = Division::findOrFail($id);
+        $division = Division::withCount('districts')->findOrFail($id);
+
+        if ($division->districts_count > 0) {
+            return response()->json([
+                'success' => false,
+                'message' => __('messages.division_has_districts') // e.g. "Cannot delete, districts exist under this division"
+            ], 400);
+        }
+
         $division->delete();
 
         return response()->json([
             'success' => true,
-            'message' => 'Division deleted successfully!'
+            'message' => __('messages.success_deleted')
         ]);
     }
 
+    // Get all districts under a division
     public function districts(Division $division)
     {
-        // eager load courts too if needed
         $districts = $division->districts()->with('courts')->get();
-
         return response()->json($districts);
     }
 }

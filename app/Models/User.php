@@ -25,6 +25,7 @@ class User extends Authenticatable
         'division_id',
         'district_id',
         'court_id',
+        'phone_number',
     ];
 
     /**

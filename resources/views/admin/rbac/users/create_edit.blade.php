@@ -72,7 +72,7 @@
                                         <option value="">Select Division</option>
                                         @foreach($divisions as $division)
                                             <option value="{{ $division->id }}" {{ (old('division_id', $user->division_id ?? '') == $division->id) ? 'selected' : '' }}>
-                                                {{ $division->name }}
+                                                {{ $division->name_en }}
                                             </option>
                                         @endforeach
                                     </select>
@@ -84,7 +84,7 @@
                                         @if(isset($user) && $user->division)
                                             @foreach($user->division->districts as $district)
                                                 <option value="{{ $district->id }}" {{ (old('district_id', $user->district_id) == $district->id) ? 'selected' : '' }}>
-                                                    {{ $district->name }}
+                                                    {{ $district->name_en }}
                                                 </option>
                                             @endforeach
                                         @endif
@@ -97,7 +97,7 @@
                                         @if(isset($user) && $user->district)
                                             @foreach($user->district->courts as $court)
                                                 <option value="{{ $court->id }}" {{ (old('court_id', $user->court_id) == $court->id) ? 'selected' : '' }}>
-                                                    {{ $court->name }}
+                                                    {{ $court->name_en }}
                                                 </option>
                                             @endforeach
                                         @endif
@@ -246,7 +246,7 @@ document.addEventListener('DOMContentLoaded', function(){
                 data.forEach(d=>{
                     const opt = document.createElement('option');
                     opt.value = d.id;
-                    opt.textContent = d.name;
+                    opt.textContent = d.name_en;
                     districtSelect.appendChild(opt);
                 });
             });
@@ -263,7 +263,7 @@ document.addEventListener('DOMContentLoaded', function(){
                 data.forEach(c=>{
                     const opt = document.createElement('option');
                     opt.value = c.id;
-                    opt.textContent = c.name;
+                    opt.textContent = c.name_en;
                     courtSelect.appendChild(opt);
                 });
             });

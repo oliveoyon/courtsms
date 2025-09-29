@@ -27,19 +27,28 @@ class CourtController extends Controller
 
     public function store(Request $request)
     {
-        $validated = $request->validate([
-            'name' => 'required|unique:courts,name',
-            'district_id' => 'required|exists:districts,id',
-        ]);
+        try {
+            $validated = $request->validate([
+                'name_en' => 'required|unique:courts,name_en',
+                'name_bn' => 'required|unique:courts,name_bn',
+                'district_id' => 'required|exists:districts,id',
+                'is_active' => 'sometimes|boolean',
+            ]);
 
-        $court = Court::create($validated);
-        $court->load('district');
+            $court = Court::create($validated);
+            $court->load('district');
 
-        return response()->json([
-            'success' => true,
-            'court' => $court,
-            'message' => 'Court created successfully!'
-        ]);
+            return response()->json([
+                'success' => true,
+                'court' => $court,
+                'message' => __('court.created_success')
+            ]);
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            // Return JSON errors instead of redirect
+            return response()->json([
+                'errors' => $e->errors()
+            ], 422);
+        }
     }
 
     public function edit($id)
@@ -53,8 +62,10 @@ class CourtController extends Controller
         $court = Court::findOrFail($id);
 
         $validated = $request->validate([
-            'name' => ['required', Rule::unique('courts')->ignore($court->id)],
+            'name_en' => ['required', Rule::unique('courts')->ignore($court->id)],
+            'name_bn' => ['required', Rule::unique('courts')->ignore($court->id)],
             'district_id' => 'required|exists:districts,id',
+            'is_active' => 'sometimes|boolean',
         ]);
 
         $court->update($validated);
@@ -63,7 +74,7 @@ class CourtController extends Controller
         return response()->json([
             'success' => true,
             'court' => $court,
-            'message' => 'Court updated successfully!'
+            'message' => __('court.updated_success')
         ]);
     }
 
@@ -74,7 +85,7 @@ class CourtController extends Controller
 
         return response()->json([
             'success' => true,
-            'message' => 'Court deleted successfully!'
+            'message' => __('court.deleted_success')
         ]);
     }
 }

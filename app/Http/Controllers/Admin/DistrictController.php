@@ -7,6 +7,7 @@ use Illuminate\Http\Request;
 use App\Models\District;
 use App\Models\Division as ModelsDivision;
 use Illuminate\Validation\Rule;
+use Illuminate\Validation\ValidationException;
 
 class DistrictController extends Controller
 {
@@ -27,18 +28,27 @@ class DistrictController extends Controller
 
     public function store(Request $request)
     {
-        $validated = $request->validate([
-            'name' => 'required|unique:districts,name',
-            'division_id' => 'required|exists:divisions,id',
-        ]);
+        try {
+            $validated = $request->validate([
+                'name_en' => 'required|unique:districts,name_en',
+                'name_bn' => 'required|unique:districts,name_bn',
+                'division_id' => 'required|exists:divisions,id',
+                'is_active' => 'sometimes|boolean',
+            ]);
 
-        $district = District::create($validated);
+            $district = District::create($validated);
 
-        return response()->json([
-            'success' => true,
-            'district' => $district->load('division'),
-            'message' => 'District created successfully!'
-        ]);
+            return response()->json([
+                'success' => true,
+                'district' => $district->load('division'),
+                'message' => __('district.district_created_success')
+            ]);
+        } catch (ValidationException $e) {
+            // Return JSON errors instead of redirect
+            return response()->json([
+                'errors' => $e->errors()
+            ], 422);
+        }
     }
 
     public function edit($id)
@@ -51,17 +61,25 @@ class DistrictController extends Controller
     {
         $district = District::findOrFail($id);
 
-        $validated = $request->validate([
-            'name' => ['required', Rule::unique('districts')->ignore($district->id)],
-            'division_id' => 'required|exists:divisions,id',
-        ]);
+        try {
+            $validated = $request->validate([
+                'name_en' => ['required', Rule::unique('districts')->ignore($district->id)],
+                'name_bn' => ['required', Rule::unique('districts')->ignore($district->id)],
+                'division_id' => 'required|exists:divisions,id',
+                'is_active' => 'sometimes|boolean',
+            ]);
+        } catch (ValidationException $e) {
+            return response()->json([
+                'errors' => $e->errors()
+            ], 422);
+        }
 
         $district->update($validated);
 
         return response()->json([
             'success' => true,
             'district' => $district->load('division'),
-            'message' => 'District updated successfully!'
+            'message' => __('district.district_updated_success')
         ]);
     }
 
@@ -72,14 +90,13 @@ class DistrictController extends Controller
 
         return response()->json([
             'success' => true,
-            'message' => 'District deleted successfully!'
+            'message' => __('district.district_deleted_success')
         ]);
     }
 
     public function courts(District $district)
     {
         $courts = $district->courts()->get();
-
         return response()->json($courts);
     }
 }

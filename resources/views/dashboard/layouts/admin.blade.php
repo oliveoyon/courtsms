@@ -1,38 +1,49 @@
 <!doctype html>
-<html lang="en">
+<html lang="{{ app()->getLocale() }}">
 
 <head>
-    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
-    <title>AdminLTE 4 | Simple Tables</title>
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
     <meta name="csrf-token" content="{{ csrf_token() }}">
-    <meta name="color-scheme" content="light dark" />
-    <meta name="theme-color" content="#007bff" media="(prefers-color-scheme: light)" />
-    <meta name="theme-color" content="#1a1a1a" media="(prefers-color-scheme: dark)" />
 
-    <meta name="title" content="AdminLTE 4 | Simple Tables" />
-    <meta name="author" content="ColorlibHQ" />
-    <meta name="description"
-        content="AdminLTE is a Free Bootstrap 5 Admin Dashboard, 30 example pages using Vanilla JS. Fully accessible with WCAG 2.1 AA compliance." />
-    <meta name="keywords"
-        content="bootstrap 5, bootstrap, bootstrap 5 admin dashboard, bootstrap 5 dashboard, bootstrap 5 charts, bootstrap 5 calendar, bootstrap 5 datepicker, bootstrap 5 tables, bootstrap 5 datatable, vanilla js datatable, colorlibhq, colorlibhq dashboard, colorlibhq admin dashboard, accessible admin panel, WCAG compliant" />
+    <title>@yield('title')</title>
 
-    <meta name="supported-color-schemes" content="light dark" />
-    <!-- CSS -->
+    <!-- Theme & Color Scheme -->
+    <meta name="color-scheme" content="light dark">
+    <meta name="theme-color" content="#007bff" media="(prefers-color-scheme: light)">
+    <meta name="theme-color" content="#1a1a1a" media="(prefers-color-scheme: dark)">
+    <meta name="language" content="{{ app()->getLocale() }}">
+    <meta http-equiv="Content-Language" content="{{ app()->getLocale() }}">
+    <meta name="supported-color-schemes" content="light dark">
+
+    <!-- Fonts -->
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fontsource/source-sans-3@5.0.12/index.css"
         integrity="sha256-tXJfXfp6Ewt1ilPzLDtQnJV4hclT9XuaZUKyUvmyr+Q=" crossorigin="anonymous" media="print"
-        onload="this.media='all'" />
+        onload="this.media='all'">
+
+    <!-- Overlay Scrollbars -->
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/overlayscrollbars@2.11.0/styles/overlayscrollbars.min.css"
-        crossorigin="anonymous" />
+        crossorigin="anonymous">
+
+    <!-- Bootstrap Icons -->
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.13.1/font/bootstrap-icons.min.css"
-        crossorigin="anonymous" />
-    <link rel="stylesheet" href="{{ asset('dashboard/css/adminlte.css') }}" />
+        crossorigin="anonymous">
+
+    <!-- AdminLTE -->
+    <link rel="stylesheet" href="{{ asset('dashboard/css/adminlte.css') }}">
+
+    <!-- Bangla Font -->
+    <link rel="stylesheet" href="http://mdminhazulhaque.github.io/solaimanlipi/css/solaimanlipi.css" type="text/css">
+
+    <!-- Page Specific Styles -->
     @stack('styles')
 </head>
 
+
 <body class="fixed-header sidebar-expand-lg sidebar-open bg-body-tertiary">
     <div class="app-wrapper">
-        <nav class="app-header navbar navbar-expand bg-body">
+        {{-- <nav class="app-header navbar navbar-expand bg-body"> --}}
+        <nav  class="app-header navbar navbar-expand bg-success-subtle" data-bs-theme="light">
             <div class="container-fluid">
                 <ul class="navbar-nav">
                     <li class="nav-item">
@@ -74,48 +85,7 @@
                                     </div>
                                 </div>
                             </a>
-                            <div class="dropdown-divider"></div>
-                            <a href="#" class="dropdown-item">
-                                <div class="d-flex">
-                                    <div class="flex-shrink-0">
-                                        <img src="../assets/img/user8-128x128.jpg" alt="User Avatar"
-                                            class="img-size-50 rounded-circle me-3" />
-                                    </div>
-                                    <div class="flex-grow-1">
-                                        <h3 class="dropdown-item-title">
-                                            John Pierce
-                                            <span class="float-end fs-7 text-secondary">
-                                                <i class="bi bi-star-fill"></i>
-                                            </span>
-                                        </h3>
-                                        <p class="fs-7">I got your message bro</p>
-                                        <p class="fs-7 text-secondary">
-                                            <i class="bi bi-clock-fill me-1"></i> 4 Hours Ago
-                                        </p>
-                                    </div>
-                                </div>
-                            </a>
-                            <div class="dropdown-divider"></div>
-                            <a href="#" class="dropdown-item">
-                                <div class="d-flex">
-                                    <div class="flex-shrink-0">
-                                        <img src="../assets/img/user3-128x128.jpg" alt="User Avatar"
-                                            class="img-size-50 rounded-circle me-3" />
-                                    </div>
-                                    <div class="flex-grow-1">
-                                        <h3 class="dropdown-item-title">
-                                            Nora Silvester
-                                            <span class="float-end fs-7 text-warning">
-                                                <i class="bi bi-star-fill"></i>
-                                            </span>
-                                        </h3>
-                                        <p class="fs-7">The subject goes here</p>
-                                        <p class="fs-7 text-secondary">
-                                            <i class="bi bi-clock-fill me-1"></i> 4 Hours Ago
-                                        </p>
-                                    </div>
-                                </div>
-                            </a>
+
                             <div class="dropdown-divider"></div>
                             <a href="#" class="dropdown-item dropdown-footer">See All Messages</a>
                         </div>
@@ -132,16 +102,7 @@
                                 <i class="bi bi-envelope me-2"></i> 4 new messages
                                 <span class="float-end text-secondary fs-7">3 mins</span>
                             </a>
-                            <div class="dropdown-divider"></div>
-                            <a href="#" class="dropdown-item">
-                                <i class="bi bi-people-fill me-2"></i> 8 friend requests
-                                <span class="float-end text-secondary fs-7">12 hours</span>
-                            </a>
-                            <div class="dropdown-divider"></div>
-                            <a href="#" class="dropdown-item">
-                                <i class="bi bi-file-earmark-fill me-2"></i> 3 new reports
-                                <span class="float-end text-secondary fs-7">2 days</span>
-                            </a>
+
                             <div class="dropdown-divider"></div>
                             <a href="#" class="dropdown-item dropdown-footer"> See All Notifications </a>
                         </div>
@@ -152,34 +113,90 @@
                             <i data-lte-icon="minimize" class="bi bi-fullscreen-exit" style="display: none"></i>
                         </a>
                     </li>
-                    <li class="nav-item dropdown user-menu">
-                        <a href="#" class="nav-link dropdown-toggle" data-bs-toggle="dropdown">
-                            <img src="../assets/img/user2-160x160.jpg" class="user-image rounded-circle shadow"
-                                alt="User Image" />
-                            <span class="d-none d-md-inline">Alexander Pierce</span>
+                    <li class="nav-item dropdown">
+                        <a class="nav-link" data-bs-toggle="dropdown" href="#">
+                            <i class="bi bi-translate"></i>
                         </a>
-                        <ul class="dropdown-menu dropdown-menu-lg dropdown-menu-end">
-                            <li class="user-header text-bg-primary">
-                                <img src="../assets/img/user2-160x160.jpg" class="rounded-circle shadow"
-                                    alt="User Image" />
-                                <p>
-                                    Alexander Pierce - Web Developer
-                                    <small>Member since Nov. 2023</small>
-                                </p>
+                        <div class="dropdown-menu dropdown-menu-end p-2" style="min-width: 120px;">
+                            @php $currentLocale = App::getLocale(); @endphp
+
+                            <a href="{{ route('locale.set', ['locale' => 'en']) }}"
+                                class="dropdown-item {{ $currentLocale === 'en' ? 'active' : '' }}">
+                                English
+                            </a>
+
+                            <a href="{{ route('locale.set', ['locale' => 'bn']) }}"
+                                class="dropdown-item {{ $currentLocale === 'bn' ? 'active' : '' }}">
+                                বাংলা
+                            </a>
+                        </div>
+                    </li>
+
+
+                    <li class="nav-item dropdown user-menu">
+                        <a href="#" class="nav-link dropdown-toggle d-flex align-items-center"
+                            data-bs-toggle="dropdown">
+                            <span
+                                class="d-flex justify-content-center align-items-center rounded-circle bg-primary text-white"
+                                style="width: 2.2rem; height: 2.2rem; font-size: 1.3rem;">
+                                <i class="bi bi-person-fill"></i>
+                            </span>
+                            <span class="d-none d-md-inline fw-bold ms-2 mb-0" style="line-height: 1; color:#1f2937;">
+                                {{ Auth::user()->name }}
+                            </span>
+                        </a>
+
+                        <ul class="dropdown-menu dropdown-menu-end" style="min-width: 250px;">
+                            <!-- User header -->
+                            <li class="user-header bg-gradient-info text-white text-center p-3">
+                                <span
+                                    class="d-inline-flex justify-content-center align-items-center rounded-circle bg-primary mb-2"
+                                    style="width: 4rem; height: 4rem; font-size: 2.5rem;">
+                                    <i class="bi bi-person-fill"></i>
+                                </span>
+                                <p class="mb-1 fw-bold" style="font-size: 1.1rem;">{{ Auth::user()->name }}</p>
+                                <small>Member since {{ Auth::user()->created_at->format('M d, Y') }}</small>
                             </li>
-                            <li class="user-body">
-                                <div class="row">
-                                    <div class="col-4 text-center"><a href="#">Followers</a></div>
-                                    <div class="col-4 text-center"><a href="#">Sales</a></div>
-                                    <div class="col-4 text-center"><a href="#">Friends</a></div>
-                                </div>
+
+                            <!-- User info -->
+                            <li class="user-body p-3" style="background-color: #f4f6f9;">
+                                @if (Auth::user()->division)
+                                    <p class="mb-1"><strong>Division:</strong> {{ Auth::user()->division->name_en }}
+                                    </p>
+                                @endif
+                                @if (Auth::user()->district)
+                                    <p class="mb-1"><strong>District:</strong> {{ Auth::user()->district->name_en }}
+                                    </p>
+                                @endif
+                                @if (Auth::user()->court)
+                                    <p class="mb-1"><strong>Court:</strong> {{ Auth::user()->court->name_en }}</p>
+                                @endif
+                                @if (Auth::user()->email)
+                                    <p class="mb-1"><strong>Email:</strong> {{ Auth::user()->email }}</p>
+                                @endif
+                                @if (Auth::user()->phone_number)
+                                    <p class="mb-0"><strong>Phone:</strong> {{ Auth::user()->phone_number }}</p>
+                                @endif
                             </li>
-                            <li class="user-footer">
-                                <a href="#" class="btn btn-default btn-flat">Profile</a>
-                                <a href="#" class="btn btn-default btn-flat float-end">Sign out</a>
+
+                            <!-- Footer -->
+                            <li class="user-footer d-flex justify-content-between p-2"
+                                style="background-color: #e9ecef;">
+                                <a href="#" class="btn btn-sm btn-primary">Profile</a>
+                                <a href="{{ route('logout') }}" class="btn btn-sm btn-danger"
+                                    onclick="event.preventDefault(); document.getElementById('logout-form').submit();">
+                                    Sign out
+                                </a>
                             </li>
                         </ul>
                     </li>
+
+
+                    <form id="logout-form" action="{{ route('logout') }}" method="POST" class="d-none">
+                        @csrf
+                    </form>
+
+
                 </ul>
             </div>
         </nav>
@@ -188,7 +205,7 @@
                 <a href="" class="brand-link">
                     <img src="{{ asset('/assets/img/AdminLTELogo.png') }}" alt="AdminLTE Logo"
                         class="brand-image opacity-75 shadow" />
-                    <span class="brand-text fw-light">AdminLTE 4</span>
+                    <span class="brand-text fw-light"><strong>CourtSMS</strong></span>
                 </a>
             </div>
             <div class="sidebar-wrapper">
@@ -201,7 +218,7 @@
                         <li class="nav-item">
                             <a href="{{ route('admin.dashboard') }}" class="nav-link">
                                 <i class="nav-icon bi bi-speedometer"></i>
-                                <p>Dashboard</p>
+                                <p>{{ __('messages.dashboard') }}</p>
                             </a>
                         </li>
 
@@ -210,25 +227,25 @@
                             <a href="#" class="nav-link">
                                 <i class="nav-icon bi bi-people"></i>
                                 <p>
-                                    User Management
+                                    {{ __('messages.user_management') }}
                                     <i class="nav-arrow bi bi-chevron-right"></i>
                                 </p>
                             </a>
                             <ul class="nav nav-treeview">
-                                @can('View Permission Groups')
+                                @can('View Permission Group')
                                     <li class="nav-item">
                                         <a href="{{ route('admin.permission-groups.index') }}" class="nav-link">
                                             <i class="nav-icon bi bi-diagram-3"></i>
-                                            <p>Permission Groups</p>
+                                            <p>{{ __('messages.permission_groups') }}</p>
                                         </a>
                                     </li>
                                 @endcan
 
-                                @can('View Permissions')
+                                @can('View Permission')
                                     <li class="nav-item">
                                         <a href="{{ route('admin.permissions.index') }}" class="nav-link">
                                             <i class="nav-icon bi bi-shield-lock"></i>
-                                            <p>Permissions</p>
+                                            <p>{{ __('messages.permissions') }}</p>
                                         </a>
                                     </li>
                                 @endcan
@@ -237,7 +254,7 @@
                                     <li class="nav-item">
                                         <a href="{{ route('admin.roles.index') }}" class="nav-link">
                                             <i class="nav-icon bi bi-person-badge"></i>
-                                            <p>Roles</p>
+                                            <p>{{ __('messages.roles') }}</p>
                                         </a>
                                     </li>
                                 @endcan
@@ -246,20 +263,20 @@
                                     <li class="nav-item">
                                         <a href="{{ route('admin.users.index') }}" class="nav-link">
                                             <i class="nav-icon bi bi-people"></i>
-                                            <p>Users</p>
+                                            <p>{{ __('messages.users') }}</p>
                                         </a>
                                     </li>
                                 @endcan
                             </ul>
                         </li>
 
-                        <!-- Master Data: Divisions / Districts / Courts -->
+                        <!-- Master Data -->
                         @canany(['View Division', 'View District', 'View Court'])
                             <li class="nav-item">
                                 <a href="#" class="nav-link">
                                     <i class="nav-icon bi bi-building"></i>
                                     <p>
-                                        Master Data
+                                        {{ __('messages.master_data') }}
                                         <i class="nav-arrow bi bi-chevron-right"></i>
                                     </p>
                                 </a>
@@ -268,7 +285,7 @@
                                         <li class="nav-item">
                                             <a href="{{ route('admin.divisions.index') }}" class="nav-link">
                                                 <i class="nav-icon bi bi-diagram-3-fill"></i>
-                                                <p>Divisions</p>
+                                                <p>{{ __('messages.divisions') }}</p>
                                             </a>
                                         </li>
                                     @endcan
@@ -277,7 +294,7 @@
                                         <li class="nav-item">
                                             <a href="{{ route('admin.districts.index') }}" class="nav-link">
                                                 <i class="nav-icon bi bi-geo-alt-fill"></i>
-                                                <p>Districts</p>
+                                                <p>{{ __('messages.districts') }}</p>
                                             </a>
                                         </li>
                                     @endcan
@@ -285,8 +302,8 @@
                                     @can('View Court')
                                         <li class="nav-item">
                                             <a href="{{ route('admin.courts.index') }}" class="nav-link">
-                                                <i class="nav-icon bi bi-gavel"></i>
-                                                <p>Courts</p>
+                                                <i class="nav-icon bi bi-house"></i>
+                                                <p>{{ __('messages.courts') }}</p>
                                             </a>
                                         </li>
                                     @endcan
@@ -294,20 +311,13 @@
                             </li>
                         @endcanany
 
-                        <!-- Example: Theme Generator -->
-                        <li class="nav-item">
-                            <a href="../generate/theme.html" class="nav-link">
-                                <i class="nav-icon bi bi-palette"></i>
-                                <p>Theme Generate</p>
-                            </a>
-                        </li>
-
+                        <!-- Logout -->
                         @auth
                             <li class="nav-item">
-                                <a href="#"  class="nav-link"
+                                <a href="#" class="nav-link"
                                     onclick="event.preventDefault(); document.getElementById('logout-form').submit();">
-                                    <i class="nav-icon bi bi-palette"></i> 
-                                    <p>Logout</p>
+                                    <i class="nav-icon bi bi-box-arrow-right"></i>
+                                    <p>{{ __('messages.logout') }}</p>
                                 </a>
                                 <form id="logout-form" action="{{ route('logout') }}" method="POST"
                                     style="display: none;">
@@ -315,10 +325,10 @@
                                 </form>
                             </li>
                         @endauth
-
                     </ul>
                     <!--end::Sidebar Menu-->
                 </nav>
+
             </div>
 
 

@@ -1,27 +1,28 @@
 @extends('dashboard.layouts.admin')
 
-@section('title', 'Divisions')
+@section('title', __('messages.divisions'))
 
 @section('content')
     <div class="container-fluid mt-4">
         <div class="d-flex justify-content-between align-items-center mb-3">
-            <h2>Divisions</h2>
+            <h2>{{ __('messages.divisions') }}</h2>
             @can('Create Division')
                 <button class="btn btn-primary" id="addDivisionBtn">
-                    <i class="bi bi-plus-circle"></i> Add Division
+                    <i class="bi bi-plus-circle"></i> {{ __('messages.add_division') }}
                 </button>
             @endcan
-
         </div>
 
         <table class="table table-striped" id="divisionsTable">
             <thead>
                 <tr>
                     <th>ID</th>
-                    <th>Name</th>
-                    <th>Created At</th>
+                    <th>{{ __('messages.name_en') }}</th>
+                    <th>{{ __('messages.name_bn') }}</th>
+                    <th>{{ __('messages.status') }}</th>
+                    <th>{{ __('messages.created_at') }}</th>
                     @canany(['Edit Division', 'Delete Division'])
-                        <th>Actions</th>
+                        <th>{{ __('messages.actions') }}</th>
                     @endcanany
                 </tr>
             </thead>
@@ -29,7 +30,15 @@
                 @foreach ($divisions as $division)
                     <tr id="division-{{ $division->id }}">
                         <td>{{ $loop->iteration }}</td>
-                        <td class="division-name">{{ $division->name }}</td>
+                        <td class="division-name-en">{{ $division->name_en }}</td>
+                        <td class="division-name-bn">{{ $division->name_bn }}</td>
+                        <td>
+                            @if ($division->is_active)
+                                <span class="badge bg-success">{{ __('messages.active') }}</span>
+                            @else
+                                <span class="badge bg-secondary">{{ __('messages.inactive') }}</span>
+                            @endif
+                        </td>
                         <td>{{ $division->created_at->format('Y-m-d') }}</td>
                         @canany(['Edit Division', 'Delete Division'])
                             <td>
@@ -45,37 +54,51 @@
                                 @endcan
                             </td>
                         @endcanany
-
-
                     </tr>
                 @endforeach
             </tbody>
         </table>
     </div>
 
-    <!-- Modal (used for both Add and Edit) -->
+    <!-- Modal (Add/Edit) -->
     <div class="modal fade" id="divisionModal" tabindex="-1" aria-labelledby="divisionModalLabel" aria-hidden="true">
         <div class="modal-dialog">
             <div class="modal-content">
                 <form id="divisionForm">
                     <div class="modal-header">
-                        <h5 class="modal-title" id="divisionModalLabel">Add Division</h5>
+                        <h5 class="modal-title" id="divisionModalLabel">{{ __('messages.add_division') }}</h5>
                         <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                     </div>
                     <div class="modal-body">
                         @csrf
                         <input type="hidden" id="divisionId">
+
                         <div class="mb-3">
-                            <label for="divisionName" class="form-label">Division Name</label>
-                            <input type="text" class="form-control" id="divisionName" name="name" required>
-                            <div class="invalid-feedback" id="nameError"></div>
+                            <label for="divisionNameEn" class="form-label">{{ __('messages.division_name_en') }}</label>
+                            <input type="text" class="form-control" id="divisionNameEn" name="name_en" required>
+                            <div class="invalid-feedback" id="nameEnError"></div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="divisionNameBn" class="form-label">{{ __('messages.division_name_bn') }}</label>
+                            <input type="text" class="form-control" id="divisionNameBn" name="name_bn" required>
+                            <div class="invalid-feedback" id="nameBnError"></div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="isActive" class="form-label">{{ __('messages.status') }}</label>
+                            <select class="form-select" id="isActive" name="is_active">
+                                <option value="1">{{ __('messages.active') }}</option>
+                                <option value="0">{{ __('messages.inactive') }}</option>
+                            </select>
                         </div>
                     </div>
                     <div class="modal-footer">
                         <button type="submit" class="btn btn-primary" id="saveDivisionBtn">
-                            <i class="bi bi-check-circle"></i> Save
+                            <i class="bi bi-check-circle"></i> {{ __('messages.save') }}
                         </button>
-                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                        <button type="button" class="btn btn-secondary"
+                            data-bs-dismiss="modal">{{ __('messages.cancel') }}</button>
                     </div>
                 </form>
             </div>
@@ -93,10 +116,8 @@
             box-shadow: 0 2px 6px rgba(0, 0, 0, 0.05);
         }
 
-        /* ====== Smart Green Table Header ====== */
         .table thead {
             background: linear-gradient(135deg, #28a745, #1c7430);
-            /* green gradient */
             color: #fff;
         }
 
@@ -108,7 +129,6 @@
             letter-spacing: 0.5px;
             padding: 12px;
         }
-
 
         .table tbody tr {
             transition: background 0.2s ease-in-out;
@@ -123,7 +143,6 @@
             padding: 12px;
         }
 
-        /* ====== Buttons Styling ====== */
         .btn {
             border-radius: 8px;
             font-weight: 500;
@@ -167,7 +186,6 @@
             box-shadow: 0 4px 10px rgba(167, 29, 42, 0.25);
         }
 
-        /* ====== Modal Styling (optional, looks cleaner) ====== */
         .modal-content {
             border-radius: 12px;
             border: none;
@@ -197,22 +215,28 @@
             const modal = new bootstrap.Modal(document.getElementById('divisionModal'));
             const addBtn = document.getElementById('addDivisionBtn');
             const form = document.getElementById('divisionForm');
-            const nameInput = document.getElementById('divisionName');
             const divisionIdInput = document.getElementById('divisionId');
-            const nameError = document.getElementById('nameError');
+            const nameEnInput = document.getElementById('divisionNameEn');
+            const nameBnInput = document.getElementById('divisionNameBn');
+            const isActiveInput = document.getElementById('isActive');
+            const nameEnError = document.getElementById('nameEnError');
+            const nameBnError = document.getElementById('nameBnError');
             const token = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
 
-            // Open modal for Add
+            // Add Division
             addBtn.addEventListener('click', () => {
                 form.reset();
                 divisionIdInput.value = '';
-                document.getElementById('divisionModalLabel').textContent = 'Add Division';
-                nameError.textContent = '';
-                nameInput.classList.remove('is-invalid');
+                nameEnError.textContent = '';
+                nameBnError.textContent = '';
+                nameEnInput.classList.remove('is-invalid');
+                nameBnInput.classList.remove('is-invalid');
+                document.getElementById('divisionModalLabel').textContent =
+                    '{{ __('messages.add_division') }}';
                 modal.show();
             });
 
-            // Open modal for Edit
+            // Edit Division
             document.querySelectorAll('.editBtn').forEach(btn => {
                 btn.addEventListener('click', () => {
                     const id = btn.dataset.id;
@@ -220,21 +244,27 @@
                         .then(res => res.json())
                         .then(data => {
                             divisionIdInput.value = data.id;
-                            nameInput.value = data.name;
+                            nameEnInput.value = data.name_en;
+                            nameBnInput.value = data.name_bn;
+                            isActiveInput.value = data.is_active ? 1 : 0;
+                            nameEnError.textContent = '';
+                            nameBnError.textContent = '';
+                            nameEnInput.classList.remove('is-invalid');
+                            nameBnInput.classList.remove('is-invalid');
                             document.getElementById('divisionModalLabel').textContent =
-                                'Edit Division';
-                            nameError.textContent = '';
-                            nameInput.classList.remove('is-invalid');
+                                '{{ __('messages.edit_division') }}';
                             modal.show();
                         });
                 });
             });
 
-            // Save division (create or update)
+            // Save Division
             form.addEventListener('submit', function(e) {
                 e.preventDefault();
-                nameError.textContent = '';
-                nameInput.classList.remove('is-invalid');
+                nameEnError.textContent = '';
+                nameBnError.textContent = '';
+                nameEnInput.classList.remove('is-invalid');
+                nameBnInput.classList.remove('is-invalid');
 
                 const id = divisionIdInput.value;
                 const url = id ? `/admin/divisions/${id}` : '/admin/divisions';
@@ -247,61 +277,51 @@
                             'X-CSRF-TOKEN': token
                         },
                         body: JSON.stringify({
-                            name: nameInput.value
+                            name_en: nameEnInput.value,
+                            name_bn: nameBnInput.value,
+                            is_active: isActiveInput.value
                         })
                     })
                     .then(async res => {
                         if (res.status === 422) {
                             const data = await res.json();
-                            nameError.textContent = data.errors.name ? data.errors.name[0] : '';
-                            nameInput.classList.add('is-invalid');
+                            if (data.errors.name_en) {
+                                nameEnError.textContent = data.errors.name_en[0];
+                                nameEnInput.classList.add('is-invalid');
+                            }
+                            if (data.errors.name_bn) {
+                                nameBnError.textContent = data.errors.name_bn[0];
+                                nameBnInput.classList.add('is-invalid');
+                            }
                         } else {
                             return res.json();
                         }
                     })
                     .then(data => {
                         if (data) {
-                            const rowId = `division-${data.division.id}`;
-                            const rowHtml = `
-                <tr id="${rowId}">
-                    <td>${data.division.id}</td>
-                    <td class="division-name">${data.division.name}</td>
-                    <td>${data.division.created_at.split('T')[0]}</td>
-                    <td>
-                        <button class="btn btn-sm btn-info editBtn" data-id="${data.division.id}">
-                            <i class="fas fa-edit"></i>
-                        </button>
-                        <button class="btn btn-sm btn-danger deleteBtn" data-id="${data.division.id}">
-                            <i class="fas fa-trash"></i>
-                        </button>
-                    </td>
-                </tr>`;
-
-                            if (id) {
-                                document.getElementById(rowId).outerHTML = rowHtml;
-                            } else {
-                                document.querySelector('#divisionsTable tbody').insertAdjacentHTML(
-                                    'beforeend', rowHtml);
+                            if (!data.success) {
+                                Swal.fire('Error', data.message, 'error');
+                                return;
                             }
-                            modal.hide();
-                            Swal.fire('Success', data.message, 'success').then(() => location.reload());
+                            Swal.fire('{{ __('messages.success') }}', data.message, 'success').then(
+                            () => location.reload());
                         }
                     });
             });
 
-            // Delete division
+            // Delete Division
             document.addEventListener('click', function(e) {
                 if (e.target.closest('.deleteBtn')) {
                     const id = e.target.closest('.deleteBtn').dataset.id;
                     Swal.fire({
-                        title: 'Are you sure?',
-                        text: "This will delete the division!",
+                        title: '{{ __('messages.confirm_delete') }}',
+                        text: '{{ __('messages.confirm_delete_text') }}',
                         icon: 'warning',
                         showCancelButton: true,
                         confirmButtonColor: '#d33',
                         cancelButtonColor: '#3085d6',
-                        confirmButtonText: 'Yes, delete it!'
-                    }).then((result) => {
+                        confirmButtonText: '{{ __('messages.yes_delete') }}'
+                    }).then(result => {
                         if (result.isConfirmed) {
                             fetch(`/admin/divisions/${id}`, {
                                     method: 'DELETE',
@@ -311,6 +331,10 @@
                                 })
                                 .then(res => res.json())
                                 .then(data => {
+                                    if (!data.success) {
+                                        Swal.fire('Error', data.message, 'error');
+                                        return;
+                                    }
                                     Swal.fire('Deleted!', data.message, 'success').then(() => {
                                         document.getElementById(`division-${id}`)
                                             .remove();
@@ -320,6 +344,7 @@
                     });
                 }
             });
+
         });
     </script>
 @endpush

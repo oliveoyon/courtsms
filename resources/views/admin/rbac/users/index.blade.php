@@ -5,8 +5,13 @@
 <div class="app-content-header">
     <div class="container-fluid">
         <div class="row">
-            <div class="col-sm-6">
+            <div class="col-sm-6 d-flex align-items-center justify-content-start gap-2">
                 <h3 class="mb-0">Users</h3>
+                @can('Create Users')
+                <a href="{{ route('admin.users.create') }}" class="btn btn-success btn-sm">
+                    <i class="bi bi-plus-lg"></i> Create User
+                </a>
+                @endcan
             </div>
             <div class="col-sm-6">
                 <ol class="breadcrumb float-sm-end">
@@ -17,6 +22,7 @@
         </div>
     </div>
 </div>
+
 
 <div class="app-content">
     <div class="container-fluid">

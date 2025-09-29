@@ -1,14 +1,14 @@
 @extends('dashboard.layouts.admin')
 
-@section('title', 'Districts')
+@section('title', __('district.title'))
 
 @section('content')
     <div class="container-fluid mt-4">
         <div class="d-flex justify-content-between align-items-center mb-3">
-            <h2>Districts</h2>
+            <h2>{{ __('district.title') }}</h2>
             @can('Create District')
                 <button class="btn btn-primary" id="addDistrictBtn">
-                    <i class="bi bi-plus-circle"></i> Add District
+                    <i class="bi bi-plus-circle"></i> {{ __('district.add') }}
                 </button>
             @endcan
         </div>
@@ -17,11 +17,12 @@
             <thead>
                 <tr>
                     <th>ID</th>
-                    <th>District Name</th>
-                    <th>Division</th>
-                    <th>Created At</th>
+                    <th>{{ __('district.name_en') }}</th>
+                    <th>{{ __('district.name_bn') }}</th>
+                    <th>{{ __('district.division') }}</th>
+                    <th>{{ __('district.created_at') }}</th>
                     @canany(['Edit District', 'Delete District'])
-                        <th>Actions</th>
+                        <th>{{ __('district.actions') }}</th>
                     @endcanany
                 </tr>
             </thead>
@@ -29,8 +30,9 @@
                 @foreach ($districts as $district)
                     <tr id="district-{{ $district->id }}">
                         <td>{{ $loop->iteration }}</td>
-                        <td class="district-name">{{ $district->name }}</td>
-                        <td>{{ $district->division->name ?? '-' }}</td>
+                        <td>{{ $district->name_en }}</td>
+                        <td>{{ $district->name_bn }}</td>
+                        <td>{{ session('locale') === 'bn' ? $district->division->name_bn : $district->division->name_en }}</td>
                         <td>{{ $district->created_at->format('Y-m-d') }}</td>
                         @canany(['Edit District', 'Delete District'])
                             <td>
@@ -58,44 +60,59 @@
             <div class="modal-content">
                 <form id="districtForm">
                     <div class="modal-header">
-                        <h5 class="modal-title" id="districtModalLabel">Add District</h5>
-                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                        <h5 class="modal-title" id="districtModalLabel">{{ __('district.add') }}</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal"
+                            aria-label="{{ __('district.close') }}"></button>
                     </div>
                     <div class="modal-body">
                         @csrf
                         <input type="hidden" id="districtId">
                         <div class="mb-3">
-                            <label for="districtName" class="form-label">District Name</label>
-                            <input type="text" class="form-control" id="districtName" name="name" required>
-                            <div class="invalid-feedback" id="nameError"></div>
+                            <label for="districtNameEn" class="form-label">{{ __('district.name_en') }}</label>
+                            <input type="text" class="form-control" id="districtNameEn" name="name_en" required>
+                            <div class="invalid-feedback" id="nameEnError"></div>
                         </div>
                         <div class="mb-3">
-                            <label for="divisionSelect" class="form-label">Division</label>
+                            <label for="districtNameBn" class="form-label">{{ __('district.name_bn') }}</label>
+                            <input type="text" class="form-control" id="districtNameBn" name="name_bn" required>
+                            <div class="invalid-feedback" id="nameBnError"></div>
+                        </div>
+                        <div class="mb-3">
+                            <label for="divisionSelect" class="form-label">{{ __('district.division') }}</label>
                             <select class="form-select" id="divisionSelect" name="division_id" required>
-                                <option value="">Select Division</option>
+                                <option value="">{{ __('district.select_division') }}</option>
                                 @foreach ($divisions as $division)
-                                    <option value="{{ $division->id }}">{{ $division->name }}</option>
+                                    <option value="{{ $division->id }}">
+                                        {{ session('locale') === 'bn' ? $division->name_bn : $division->name_en }}
+                                    </option>
                                 @endforeach
                             </select>
+
                             <div class="invalid-feedback" id="divisionError"></div>
+                        </div>
+                        <div class="mb-3">
+                            <label for="statusSelect" class="form-label">{{ __('district.status') }}</label>
+                            <select class="form-select" id="statusSelect" name="is_active" required>
+                                <option value="1">{{ __('district.active') }}</option>
+                                <option value="0">{{ __('district.inactive') }}</option>
+                            </select>
                         </div>
                     </div>
                     <div class="modal-footer">
                         <button type="submit" class="btn btn-primary" id="saveDistrictBtn">
-                            <i class="bi bi-check-circle"></i> Save
+                            <i class="bi bi-check-circle"></i> {{ __('district.save') }}
                         </button>
-                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                        <button type="button" class="btn btn-secondary"
+                            data-bs-dismiss="modal">{{ __('district.cancel') }}</button>
                     </div>
                 </form>
             </div>
         </div>
     </div>
-
 @endsection
 
 @push('styles')
     <style>
-        
         /* ====== Table Styling ====== */
         .table {
             border-radius: 12px;
@@ -104,10 +121,8 @@
             box-shadow: 0 2px 6px rgba(0, 0, 0, 0.05);
         }
 
-        /* ====== Smart Green Table Header ====== */
         .table thead {
             background: linear-gradient(135deg, #28a745, #1c7430);
-            /* green gradient */
             color: #fff;
         }
 
@@ -119,7 +134,6 @@
             letter-spacing: 0.5px;
             padding: 12px;
         }
-
 
         .table tbody tr {
             transition: background 0.2s ease-in-out;
@@ -134,7 +148,6 @@
             padding: 12px;
         }
 
-        /* ====== Buttons Styling ====== */
         .btn {
             border-radius: 8px;
             font-weight: 500;
@@ -178,7 +191,6 @@
             box-shadow: 0 4px 10px rgba(167, 29, 42, 0.25);
         }
 
-        /* ====== Modal Styling (optional, looks cleaner) ====== */
         .modal-content {
             border-radius: 12px;
             border: none;
@@ -201,152 +213,161 @@
         }
     </style>
 @endpush
-
 @push('scripts')
-    <script>
-        document.addEventListener('DOMContentLoaded', function() {
-            const modal = new bootstrap.Modal(document.getElementById('districtModal'));
-            const addBtn = document.getElementById('addDistrictBtn');
-            const form = document.getElementById('districtForm');
-            const nameInput = document.getElementById('districtName');
-            const divisionSelect = document.getElementById('divisionSelect');
-            const districtIdInput = document.getElementById('districtId');
-            const nameError = document.getElementById('nameError');
-            const divisionError = document.getElementById('divisionError');
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const modal = new bootstrap.Modal(document.getElementById('districtModal'));
+    const addBtn = document.getElementById('addDistrictBtn');
+    const form = document.getElementById('districtForm');
+    const nameEnInput = document.getElementById('districtNameEn');
+    const nameBnInput = document.getElementById('districtNameBn');
+    const divisionSelect = document.getElementById('divisionSelect');
+    const statusSelect = document.getElementById('statusSelect');
+    const districtIdInput = document.getElementById('districtId');
+    const nameEnError = document.getElementById('nameEnError');
+    const nameBnError = document.getElementById('nameBnError');
+    const divisionError = document.getElementById('divisionError');
+    const token = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
+    const currentLocale = "{{ session('locale', app()->getLocale()) }}";
 
-            const token = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
+    // Open Add modal
+    addBtn.addEventListener('click', () => {
+        form.reset();
+        districtIdInput.value = '';
+        document.getElementById('districtModalLabel').textContent = '{{ __('district.add') }}';
+        nameEnError.textContent = '';
+        nameBnError.textContent = '';
+        divisionError.textContent = '';
+        nameEnInput.classList.remove('is-invalid');
+        nameBnInput.classList.remove('is-invalid');
+        divisionSelect.classList.remove('is-invalid');
+        modal.show();
+    });
 
-            // Open modal for Add
-            addBtn.addEventListener('click', () => {
-                form.reset();
-                districtIdInput.value = '';
-                document.getElementById('districtModalLabel').textContent = 'Add District';
-                nameError.textContent = '';
-                divisionError.textContent = '';
-                nameInput.classList.remove('is-invalid');
-                divisionSelect.classList.remove('is-invalid');
-                modal.show();
-            });
+    // Open Edit modal
+    document.addEventListener('click', function(e) {
+        if (e.target.closest('.editBtn')) {
+            const id = e.target.closest('.editBtn').dataset.id;
+            fetch(`/admin/districts/${id}/edit`)
+                .then(res => res.json())
+                .then(data => {
+                    districtIdInput.value = data.id;
+                    nameEnInput.value = data.name_en;
+                    nameBnInput.value = data.name_bn;
+                    divisionSelect.value = data.division_id;
+                    statusSelect.value = data.is_active ? 1 : 0;
+                    document.getElementById('districtModalLabel').textContent = '{{ __('district.edit') }}';
+                    nameEnError.textContent = '';
+                    nameBnError.textContent = '';
+                    divisionError.textContent = '';
+                    nameEnInput.classList.remove('is-invalid');
+                    nameBnInput.classList.remove('is-invalid');
+                    divisionSelect.classList.remove('is-invalid');
+                    modal.show();
+                });
+        }
+    });
 
-            // Open modal for Edit
-            // Delegate edit button click
-            document.addEventListener('click', function(e) {
-                if (e.target.closest('.editBtn')) {
-                    const btn = e.target.closest('.editBtn');
-                    const id = btn.dataset.id;
+    // Save District
+    form.addEventListener('submit', function(e) {
+        e.preventDefault();
+        nameEnError.textContent = '';
+        nameBnError.textContent = '';
+        divisionError.textContent = '';
+        nameEnInput.classList.remove('is-invalid');
+        nameBnInput.classList.remove('is-invalid');
+        divisionSelect.classList.remove('is-invalid');
 
-                    fetch(`/admin/districts/${id}/edit`)
-                        .then(res => res.json())
-                        .then(data => {
-                            districtIdInput.value = data.id;
-                            nameInput.value = data.name;
-                            divisionSelect.value = data.division_id;
-                            document.getElementById('districtModalLabel').textContent = 'Edit District';
-                            nameError.textContent = '';
-                            divisionError.textContent = '';
-                            nameInput.classList.remove('is-invalid');
-                            divisionSelect.classList.remove('is-invalid');
-                            modal.show();
-                        });
+        const id = districtIdInput.value;
+        const url = id ? `/admin/districts/${id}` : '/admin/districts';
+        const method = id ? 'PUT' : 'POST';
+
+        fetch(url, {
+            method: method,
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRF-TOKEN': token
+            },
+            body: JSON.stringify({
+                name_en: nameEnInput.value,
+                name_bn: nameBnInput.value,
+                division_id: divisionSelect.value,
+                is_active: statusSelect.value
+            })
+        }).then(async res => {
+            if (res.status === 422) {
+                const data = await res.json();
+                if (data.errors.name_en) {
+                    nameEnError.textContent = data.errors.name_en[0];
+                    nameEnInput.classList.add('is-invalid');
                 }
-            });
-
-
-            // Save (Add or Update)
-            form.addEventListener('submit', function(e) {
-                e.preventDefault();
-                nameError.textContent = '';
-                divisionError.textContent = '';
-                nameInput.classList.remove('is-invalid');
-                divisionSelect.classList.remove('is-invalid');
-
-                const id = districtIdInput.value;
-                const url = id ? `/admin/districts/${id}` : '/admin/districts';
-                const method = id ? 'PUT' : 'POST';
-
-                fetch(url, {
-                        method: method,
-                        headers: {
-                            'Content-Type': 'application/json',
-                            'X-CSRF-TOKEN': token
-                        },
-                        body: JSON.stringify({
-                            name: nameInput.value,
-                            division_id: divisionSelect.value
-                        })
-                    })
-                    .then(async res => {
-                        if (res.status === 422) {
-                            const data = await res.json();
-                            if (data.errors.name) {
-                                nameError.textContent = data.errors.name[0];
-                                nameInput.classList.add('is-invalid');
-                            }
-                            if (data.errors.division_id) {
-                                divisionError.textContent = data.errors.division_id[0];
-                                divisionSelect.classList.add('is-invalid');
-                            }
-                        } else {
-                            return res.json();
-                        }
-                    })
-                    .then(data => {
-                        if (data) {
-                            const rowId = `district-${data.district.id}`;
-                            const rowHtml = `
-                <tr id="${rowId}">
-                    <td>${data.district.id}</td>
-                    <td class="district-name">${data.district.name}</td>
-                    <td>${data.district.division.name}</td>
-                    <td>${data.district.created_at.split('T')[0]}</td>
-                    <td>
-                        <button class="btn btn-sm btn-info editBtn" data-id="${data.district.id}"><i class="bi bi-pencil-square"></i></button>
-                        <button class="btn btn-sm btn-danger deleteBtn" data-id="${data.district.id}"><i class="bi bi-trash-fill"></i></button>
-                    </td>
-                </tr>`;
-
-                            if (id) {
-                                document.getElementById(rowId).outerHTML = rowHtml;
-                            } else {
-                                document.querySelector('#districtsTable tbody').insertAdjacentHTML(
-                                    'beforeend', rowHtml);
-                            }
-                            modal.hide();
-                            Swal.fire('Success', data.message, 'success');
-                        }
-                    });
-            });
-
-            // Delete
-            document.addEventListener('click', function(e) {
-                if (e.target.closest('.deleteBtn')) {
-                    const id = e.target.closest('.deleteBtn').dataset.id;
-                    Swal.fire({
-                        title: 'Are you sure?',
-                        text: "This will delete the district!",
-                        icon: 'warning',
-                        showCancelButton: true,
-                        confirmButtonColor: '#d33',
-                        cancelButtonColor: '#3085d6',
-                        confirmButtonText: 'Yes, delete it!'
-                    }).then((result) => {
-                        if (result.isConfirmed) {
-                            fetch(`/admin/districts/${id}`, {
-                                    method: 'DELETE',
-                                    headers: {
-                                        'X-CSRF-TOKEN': token
-                                    }
-                                })
-                                .then(res => res.json())
-                                .then(data => {
-                                    Swal.fire('Deleted!', data.message, 'success');
-                                    document.getElementById(`district-${id}`).remove();
-                                });
-                        }
-                    });
+                if (data.errors.name_bn) {
+                    nameBnError.textContent = data.errors.name_bn[0];
+                    nameBnInput.classList.add('is-invalid');
                 }
-            });
-
+                if (data.errors.division_id) {
+                    divisionError.textContent = data.errors.division_id[0];
+                    divisionSelect.classList.add('is-invalid');
+                }
+            } else {
+                return res.json();
+            }
+        }).then(data => {
+            if (data) {
+                const rowId = `district-${data.district.id}`;
+                const rowHtml = `
+<tr id="${rowId}">
+    <td>${data.district.id}</td>
+    <td>${data.district.name_en}</td>
+    <td>${data.district.name_bn}</td>
+    <td>
+        ${currentLocale === 'bn' ? (data.district.division?.name_bn ?? '-') : (data.district.division?.name_en ?? '-')}
+    </td>
+    <td>${data.district.created_at.split('T')[0]}</td>
+    <td>
+        <button class="btn btn-sm btn-info editBtn" data-id="${data.district.id}"><i class="bi bi-pencil-square"></i></button>
+        <button class="btn btn-sm btn-danger deleteBtn" data-id="${data.district.id}"><i class="bi bi-trash-fill"></i></button>
+    </td>
+</tr>`;
+                if (id) {
+                    document.getElementById(rowId).outerHTML = rowHtml;
+                } else {
+                    document.querySelector('#districtsTable tbody').insertAdjacentHTML('beforeend', rowHtml);
+                }
+                modal.hide();
+                Swal.fire('Success', data.message, 'success');
+            }
         });
-    </script>
+    });
+
+    // Delete
+    document.addEventListener('click', function(e) {
+        if (e.target.closest('.deleteBtn')) {
+            const id = e.target.closest('.deleteBtn').dataset.id;
+            Swal.fire({
+                title: '{{ __('district.confirm_delete') }}',
+                text: '{{ __('district.confirm_delete_text') }}',
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#d33',
+                cancelButtonColor: '#3085d6',
+                confirmButtonText: '{{ __('district.yes_delete') }}'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    fetch(`/admin/districts/${id}`, {
+                        method: 'DELETE',
+                        headers: {
+                            'X-CSRF-TOKEN': token
+                        }
+                    }).then(res => res.json())
+                      .then(data => {
+                        Swal.fire('Deleted!', data.message, 'success');
+                        document.getElementById(`district-${id}`).remove();
+                    });
+                }
+            });
+        }
+    });
+});
+</script>
 @endpush

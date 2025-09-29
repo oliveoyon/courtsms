@@ -27,7 +27,7 @@ class RoleController extends Controller
         $roles = $loggedInUser->hasRole('Super Admin')
             ? Role::all()
             : Role::where('name', '!=', 'Super Admin')->get();
-            
+
         $permissions = Permission::with('group')->get();
 
         return view('admin.rbac.roles', compact('roles', 'permissions'));
@@ -78,6 +78,18 @@ class RoleController extends Controller
     public function destroy($id)
     {
         $role = Role::findOrFail($id);
+
+        // Check if any users have this role
+        $assignedUsersCount = $role->users()->count(); // `users()` relation comes from HasRoles trait
+
+        if ($assignedUsersCount > 0) {
+            return response()->json([
+                'success' => false,
+                'message' => 'This role is assigned to users and cannot be deleted.'
+            ], 400);
+        }
+
+        // Safe to delete
         $role->delete();
 
         return response()->json([
@@ -85,6 +97,7 @@ class RoleController extends Controller
             'message' => 'Role deleted successfully!'
         ]);
     }
+
 
     // Show permissions for role (assign modal)
     public function permissions($id)

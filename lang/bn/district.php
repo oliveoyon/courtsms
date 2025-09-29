@@ -1,0 +1,32 @@
+<?php
+
+return [
+    'title' => 'জেলা সমূহ',
+    'add' => 'নতুন জেলা যুক্ত করুন',
+    'edit' => 'জেলা সম্পাদনা করুন',
+    'name_en' => 'জেলার নাম (ইংরেজি)',
+    'name_bn' => 'জেলার নাম (বাংলা)',
+    'division' => 'বিভাগ',
+    'select_division' => 'বিভাগ নির্বাচন করুন',
+    'status' => 'স্ট্যাটাস',
+    'active' => 'সক্রিয়',
+    'inactive' => 'নিষ্ক্রিয়',
+    'save' => 'সংরক্ষণ',
+    'cancel' => 'বাতিল',
+    'actions' => 'একশন',
+    'close' => 'বন্ধ',
+    'confirm_delete' => 'আপনি কি নিশ্চিত?',
+    'confirm_delete_text' => 'এটি জেলা মুছে ফেলবে!',
+    'yes_delete' => 'হ্যাঁ, মুছে দিন!',
+    'created_at' => 'তৈরির সময়',
+
+    'district' => 'জেলা',
+    'districts' => 'জেলাসমূহ',
+    'district_created_success' => 'জেলা সফলভাবে তৈরি হয়েছে!',
+    'district_updated_success' => 'জেলা সফলভাবে আপডেট হয়েছে!',
+    'district_deleted_success' => 'জেলা সফলভাবে মুছে ফেলা হয়েছে!',
+    'select_division' => 'বিভাগ নির্বাচন করুন',
+    'name_en' => 'জেলার নাম (ইংরেজি)',
+    'name_bn' => 'জেলার নাম (বাংলা)',
+    'division' => 'বিভাগ',
+];
