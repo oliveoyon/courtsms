@@ -35,6 +35,9 @@ class PermissionRoleUserSeeder extends Seeder
             2 => 'Role Managements',
             3 => 'Permission Group Management',
             4 => 'User Management',
+            5 => 'Division Management',
+            6 => 'District Management',
+            7 => 'Court Management',
         ];
 
         foreach ($groups as $id => $name) {
@@ -64,6 +67,19 @@ class PermissionRoleUserSeeder extends Seeder
             [16, 4, 'Edit Users'],
             [17, 4, 'Delete Users'],
             [18, 4, 'View User Permissions'],
+            [19, 5, 'View Division'],
+            [20, 5, 'Create Division'],
+            [21, 5, 'Edit Division'],
+            [22, 5, 'Delete Divisioners'],
+            [23, 6, 'View District'],
+            [24, 6, 'Create District'],
+            [25, 6, 'Edit District'],
+            [26, 6, 'Delete District'],
+            [27, 7, 'View Court'],
+            [28, 7, 'Create Court'],
+            [29, 7, 'Edit Court'],
+            [30, 7, 'Delete Court'],
+            
         ];
 
         foreach ($permissions as [$id, $groupId, $name]) {

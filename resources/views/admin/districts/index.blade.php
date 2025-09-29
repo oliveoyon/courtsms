@@ -20,6 +20,7 @@
                     <th>{{ __('district.name_en') }}</th>
                     <th>{{ __('district.name_bn') }}</th>
                     <th>{{ __('district.division') }}</th>
+                    <th>{{ __('messages.status') }}</th>
                     <th>{{ __('district.created_at') }}</th>
                     @canany(['Edit District', 'Delete District'])
                         <th>{{ __('district.actions') }}</th>
@@ -32,7 +33,15 @@
                         <td>{{ $loop->iteration }}</td>
                         <td>{{ $district->name_en }}</td>
                         <td>{{ $district->name_bn }}</td>
-                        <td>{{ session('locale') === 'bn' ? $district->division->name_bn : $district->division->name_en }}</td>
+                        <td>{{ session('locale') === 'bn' ? $district->division->name_bn : $district->division->name_en }}
+                        </td>
+                        <td>
+                            @if ($district->is_active)
+                                <span class="badge bg-success">{{ __('messages.active') }}</span>
+                            @else
+                                <span class="badge bg-secondary">{{ __('messages.inactive') }}</span>
+                            @endif
+                        </td>
                         <td>{{ $district->created_at->format('Y-m-d') }}</td>
                         @canany(['Edit District', 'Delete District'])
                             <td>
@@ -230,7 +239,7 @@ document.addEventListener('DOMContentLoaded', function() {
     const token = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
     const currentLocale = "{{ session('locale', app()->getLocale()) }}";
 
-    // Open Add modal
+    // === Open Add Modal ===
     addBtn.addEventListener('click', () => {
         form.reset();
         districtIdInput.value = '';
@@ -244,7 +253,7 @@ document.addEventListener('DOMContentLoaded', function() {
         modal.show();
     });
 
-    // Open Edit modal
+    // === Open Edit Modal ===
     document.addEventListener('click', function(e) {
         if (e.target.closest('.editBtn')) {
             const id = e.target.closest('.editBtn').dataset.id;
@@ -268,7 +277,7 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     });
 
-    // Save District
+    // === Save District ===
     form.addEventListener('submit', function(e) {
         e.preventDefault();
         nameEnError.textContent = '';
@@ -315,13 +324,17 @@ document.addEventListener('DOMContentLoaded', function() {
         }).then(data => {
             if (data) {
                 const rowId = `district-${data.district.id}`;
+                const isActive = data.district.is_active == 1 || data.district.is_active === true;
                 const rowHtml = `
 <tr id="${rowId}">
     <td>${data.district.id}</td>
     <td>${data.district.name_en}</td>
     <td>${data.district.name_bn}</td>
+    <td>${currentLocale === 'bn' ? (data.district.division?.name_bn ?? '-') : (data.district.division?.name_en ?? '-')}</td>
     <td>
-        ${currentLocale === 'bn' ? (data.district.division?.name_bn ?? '-') : (data.district.division?.name_en ?? '-')}
+        ${isActive 
+            ? (currentLocale === 'bn' ? '<span class="badge bg-success">সক্রিয়</span>' : '<span class="badge bg-success">Active</span>') 
+            : (currentLocale === 'bn' ? '<span class="badge bg-danger">নিষ্ক্রিয়</span>' : '<span class="badge bg-danger">Inactive</span>')}
     </td>
     <td>${data.district.created_at.split('T')[0]}</td>
     <td>
@@ -340,7 +353,7 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     });
 
-    // Delete
+    // === Delete District ===
     document.addEventListener('click', function(e) {
         if (e.target.closest('.deleteBtn')) {
             const id = e.target.closest('.deleteBtn').dataset.id;
@@ -352,7 +365,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 confirmButtonColor: '#d33',
                 cancelButtonColor: '#3085d6',
                 confirmButtonText: '{{ __('district.yes_delete') }}'
-            }).then((result) => {
+            }).then(result => {
                 if (result.isConfirmed) {
                     fetch(`/admin/districts/${id}`, {
                         method: 'DELETE',

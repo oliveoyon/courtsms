@@ -223,6 +223,7 @@
                         </li>
 
                         <!-- User Management -->
+                        @canany(['View Permission Group', 'View Permission', 'View Roles', 'View Users'])
                         <li class="nav-item">
                             <a href="#" class="nav-link">
                                 <i class="nav-icon bi bi-people"></i>
@@ -269,6 +270,7 @@
                                 @endcan
                             </ul>
                         </li>
+                        @endcanany
 
                         <!-- Master Data -->
                         @canany(['View Division', 'View District', 'View Court'])

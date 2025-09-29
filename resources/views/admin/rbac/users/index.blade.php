@@ -57,20 +57,28 @@
 
                         <!-- Actions -->
                         <div class="d-flex justify-content-between align-items-center mt-3">
+                            @can('View User Permissions')
                             <div>
                                 <button type="button" class="btn btn-sm btn-outline-secondary" data-bs-toggle="modal" data-bs-target="#permissionsModal-{{ $user->id }}">
                                     View Permissions
                                     <span class="badge bg-light text-dark">{{ $user->permissions->count() }}</span>
                                 </button>
                             </div>
+                            @endcan
+                            
                             <div class="d-flex gap-2">
+                                @can('Edit Users')
                                 <a href="{{ route('admin.users.edit', $user->id) }}" class="btn btn-sm btn-outline-primary">
                                     <i class="bi bi-pencil-fill"></i>
                                 </a>
+                                @endcan
+                                @can('Delete Users')
                                 <button type="button" class="btn btn-sm btn-outline-danger delete-user" data-id="{{ $user->id }}">
                                     <i class="bi bi-trash-fill"></i>
                                 </button>
+                                @endcan
                             </div>
+                            
                         </div>
                     </div>
                 </div>
