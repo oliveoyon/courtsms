@@ -1,0 +1,199 @@
+Absolutely! I’ll create a **comprehensive, detailed concept note for CourtSMS**, consolidating **all our discussions, database design, workflow, form design, and SMS/WhatsApp logic**. This will be **standalone**, so you can reuse it in any future session.
+
+---
+
+# **CourtSMS – Concept Note**
+
+## **1. Purpose and Scope**
+
+**CourtSMS** is an application to **notify witnesses to appear in court** via **SMS** as the primary channel, with optional **WhatsApp messages**. The system is designed for **low-literacy court staff**, supports **Bangla and English**, allows **multiple witnesses per case**, schedules **multiple reminders**, tracks **attendance**, and provides **reporting by division, district, court, and user**.
+
+Key objectives:
+
+1. Ensure timely communication to witnesses.
+2. Reduce manual follow-up by court staff.
+3. Maintain accurate records of messages sent and attendance.
+4. Provide easy-to-use forms for low-computer-literacy staff.
+
+---
+
+## **2. System Users and Roles**
+
+* **Court Staff / Admin Users:** Schedule cases, add witnesses, select templates, and track messages.
+* **System Administrators:** Manage templates, users, and report generation.
+* **Roles Managed by Spatie** (Laravel): Ensures permission-based access.
+
+---
+
+## **3. Data Model**
+
+### **Existing Tables (Reuse)**
+
+| Table       | Purpose                                                         |
+| ----------- | --------------------------------------------------------------- |
+| `users`     | System users with division/district/court info                  |
+| `divisions` | Administrative divisions for reporting                          |
+| `districts` | Administrative districts                                        |
+| `courts`    | Court info including name_en, name_bn, division_id, district_id |
+
+---
+
+### **New Tables**
+
+#### **3.1 court_cases**
+
+Tracks individual court cases.
+
+| Field              | Type                | Notes                     |
+| ------------------ | ------------------- | ------------------------- |
+| id                 | bigint, PK          | Auto-increment            |
+| case_number        | string              | Case ID / number          |
+| court_id           | bigint, FK → courts | Court for the case        |
+| case_type          | string              | Civil / Criminal / Other  |
+| scheduled_date     | date                | When witness is scheduled |
+| created_by_user_id | bigint, FK → users  | Staff who created case    |
+| created_at         | timestamp           | Auto                      |
+| updated_at         | timestamp           | Auto                      |
+
+---
+
+#### **3.2 witnesses**
+
+Stores all witness info.
+
+| Field              | Type               | Notes                   |
+| ------------------ | ------------------ | ----------------------- |
+| id                 | bigint, PK         | Auto-increment          |
+| full_name          | string             | Bangla or English       |
+| contact_number     | string             | Valid Bangladesh number |
+| address            | text               | Optional                |
+| created_by_user_id | bigint, FK → users | Staff entering witness  |
+| created_at         | timestamp          | Auto                    |
+| updated_at         | timestamp          | Auto                    |
+
+> **Note:** Multiple witnesses per case are handled via `notifications`.
+
+---
+
+#### **3.3 notifications**
+
+Tracks SMS/WhatsApp messages per witness per case.
+
+| Field               | Type                            | Notes                      |
+| ------------------- | ------------------------------- | -------------------------- |
+| id                  | bigint, PK                      | Auto-increment             |
+| case_id             | bigint, FK → court_cases        | Linked case                |
+| witness_id          | bigint, FK → witnesses          | Linked witness             |
+| user_id             | bigint, FK → users              | Scheduler                  |
+| channel             | enum('SMS','WhatsApp')          | Message channel            |
+| template_type       | enum('SMS','WhatsApp')          | Template used              |
+| message_content     | text                            | Content of message         |
+| scheduled_send_date | date                            | Planned sending date       |
+| sent_at             | timestamp                       | Nullable, actual send time |
+| status              | enum('pending','sent','failed') | Delivery tracking          |
+| retry_count         | integer                         | For failed messages        |
+| appeared            | boolean / timestamp             | Witness attendance         |
+| remarks             | text                            | Optional notes             |
+| created_at          | timestamp                       | Auto                       |
+| updated_at          | timestamp                       | Auto                       |
+
+> Multiple reminders (e.g., 10 days, 3 days before) = multiple rows.
+
+---
+
+#### **3.4 message_templates (Optional)**
+
+Predefined messages for SMS and WhatsApp.
+
+| Field               | Type                   | Notes            |
+| ------------------- | ---------------------- | ---------------- |
+| id                  | bigint, PK             | Auto-increment   |
+| template_name       | string                 | Name of template |
+| template_content_bn | text                   | Bangla message   |
+| template_content_en | text                   | English message  |
+| channel             | enum('SMS','WhatsApp') | Channel type     |
+| created_by_user_id  | bigint, FK → users     | Creator          |
+| created_at          | timestamp              | Auto             |
+| updated_at          | timestamp              | Auto             |
+
+---
+
+## **4. Form Design (User Input)**
+
+Designed for **low-literacy court staff**, mostly **dropdowns, checkboxes, auto-filled fields**, minimal typing.
+
+### **Form Sections**
+
+| Section          | Field / Input                                    | Notes                                                          |
+| ---------------- | ------------------------------------------------ | -------------------------------------------------------------- |
+| Court Info       | Court (dropdown)                                 | Auto-fills division & district                                 |
+| Case Info        | Case Number, Case Type, Scheduled Date           | Short typing, calendar widget                                  |
+| Witnesses        | Dynamic rows: Name, Phone, Has WhatsApp, Remarks | “Add Another Witness” button for multiple witnesses            |
+| Message Template | Dropdown                                         | Predefined BN/EN messages                                      |
+| Reminder Days    | Checkboxes (10, 3, 1 days)                       | Auto-schedule multiple reminders                               |
+| Submit           | Button                                           | “Save & Schedule SMS/WhatsApp”, loader to prevent double-click |
+
+### **Form Rules**
+
+1. Witness name: English or Bangla, required.
+2. Phone number: Numeric, validated for Bangladesh.
+3. Scheduled date: Future only.
+4. Has WhatsApp: Checked by default, optional.
+5. At least one reminder day selected.
+
+---
+
+## **5. SMS / WhatsApp Sending Workflow**
+
+1. **Insert notifications** → status = `pending`.
+2. **Scheduler / Cron job** runs periodically:
+
+   * Queries notifications with `status = pending` and `scheduled_send_date <= now()`.
+   * Calls SMS / WhatsApp API.
+   * Updates `status`:
+
+     * `sent` → if API confirms success
+     * `failed` → if API returns error, increment `retry_count`
+   * Optional retry logic with max attempts.
+3. **WhatsApp optional:** If number unknown for WhatsApp, send only SMS.
+4. **Message templates differ**: SMS = concise, WhatsApp = broader.
+5. **Attendance tracking:** Update `appeared` field after witness arrives.
+
+---
+
+## **6. Reporting and Tracking**
+
+* **Pending messages:** `status = pending AND scheduled_send_date <= now()`
+* **Sent messages:** `status = sent`
+* **Failed messages:** `status = failed`, track `retry_count`
+* **Attendance report:** Join `notifications` → `witnesses` → `court_cases` → `courts` → `districts/divisions` → `users`
+* **Segregation:** By division, district, court, user
+
+---
+
+## **7. Key Advantages**
+
+1. **Minimal tables**: Only new tables are `court_cases`, `witnesses`, `notifications` (optional `message_templates`).
+2. **Supports multiple witnesses per case** via dynamic rows.
+3. **Supports multi-day reminders** without complexity.
+4. **Bangla / English input** supported.
+5. **SMS as primary channel**, WhatsApp optional.
+6. **Handles API delays**: pending → sent / failed → retry.
+7. **Low-literacy user-friendly forms**.
+8. **Future-proof for reporting and analytics**.
+
+---
+
+✅ **This concept note is standalone** – it includes:
+
+* Database structure
+* Form layout and rules
+* SMS/WhatsApp scheduling and tracking
+* Workflow for multiple witnesses, reminders, and attendance
+* Reporting logic
+
+---
+
+If you want, I can **also make a visual diagram showing table relationships + workflow**, so this concept note is **fully graphical and textual** for future reference.
+
+Do you want me to do that?
