@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\Admin\CourtCaseController;
 use App\Http\Controllers\Admin\CourtController;
 use App\Http\Controllers\Admin\DashboardController;
 use App\Http\Controllers\Admin\DistrictController;
@@ -53,6 +54,10 @@ Route::prefix('admin')->name('admin.')->middleware(['auth'])->group(function () 
     Route::resource('courts', CourtController::class);
     Route::get('divisions/{division}/districts', [DivisionController::class, 'districts']);
     Route::get('districts/{district}/courts', [DistrictController::class, 'courts']);
+
+
+    Route::get('cases/create-and-send', [CourtCaseController::class, 'createAndSend'])->name('cases.create_send');
+    Route::post('cases/create-and-send', [CourtCaseController::class, 'storeAndSend'])->name('cases.store_send');
 
 
     // Route::get('permission-manager', [PermissionManagerController::class, 'index'])->name('permission-manager.index');

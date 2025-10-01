@@ -1,0 +1,311 @@
+@extends('dashboard.layouts.admin')
+@section('title', 'Create Case & Send Notification')
+
+@section('content')
+    <div class="app-content">
+        <div class="container-fluid">
+            <form id="caseForm">
+                @csrf
+
+                <!-- Case Details -->
+                <div class="card card-body mb-3">
+                    <h5>Case Details</h5>
+                    <div class="row g-3 mt-3">
+                        <div class="col-md-4">
+                            <label class="form-label">Division</label>
+                            <select name="division_id" id="division_id" class="form-select"
+                                {{ isset($user) && $user->division_id ? 'disabled' : '' }}>
+                                <option value="">Select Division</option>
+                                @foreach ($divisions as $division)
+                                    <option value="{{ $division->id }}"
+                                        {{ old('division_id', $user->division_id ?? '') == $division->id ? 'selected' : '' }}>
+                                        {{ $division->name_en }}
+                                    </option>
+                                @endforeach
+                            </select>
+                        </div>
+
+                        <div class="col-md-4">
+                            <label class="form-label">District</label>
+                            <select name="district_id" id="district_id" class="form-select"
+                                {{ isset($user) && $user->district_id ? 'disabled' : '' }}>
+                                <option value="">Select District</option>
+                                @if (isset($user) && $user->division)
+                                    @foreach ($user->division->districts as $district)
+                                        <option value="{{ $district->id }}"
+                                            {{ old('district_id', $user->district_id) == $district->id ? 'selected' : '' }}>
+                                            {{ $district->name_en }}
+                                        </option>
+                                    @endforeach
+                                @endif
+                            </select>
+                        </div>
+
+                        <div class="col-md-4">
+                            <label class="form-label">Court</label>
+                            <select name="court_id" id="court_id" class="form-select"
+                                {{ isset($user) && $user->court_id ? 'disabled' : '' }}>
+                                <option value="">Select Court</option>
+                                @if (isset($user) && $user->district)
+                                    @foreach ($user->district->courts as $court)
+                                        <option value="{{ $court->id }}"
+                                            {{ old('court_id', $user->court_id) == $court->id ? 'selected' : '' }}>
+                                            {{ $court->name_en }}
+                                        </option>
+                                    @endforeach
+                                @endif
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="mt-2">
+                        <label>Case No</label>
+                        <input type="text" name="case_no" class="form-control" id="caseNo" required>
+                    </div>
+
+   
+
+
+                    <div class="row g-3 mt-2">
+                        <div class="col-md-3">
+                            <label>Hearing Date</label>
+                            <input type="date" name="hearing_date" class="form-control" id="hearingDate" required>
+                        </div>
+                        <div class="col-md-3">
+                            <label>Hearing Time</label>
+                            <input type="time" name="hearing_time" class="form-control" required>
+                        </div>
+                    </div>
+
+                    <div class="mt-2">
+                        <label>Notes</label>
+                        <textarea name="notes" class="form-control"></textarea>
+                    </div>
+                </div>
+
+                <!-- Witnesses -->
+                <div class="card card-body mb-3">
+                    <h5>Witnesses</h5>
+                    <table class="table table-bordered" id="witnessTable">
+                        <thead>
+                            <tr>
+                                <th>Name</th>
+                                <th>Phone</th>
+                                <th><button type="button" id="addRow" class="btn btn-success btn-sm"><i
+                                            class="bi bi-plus-lg"></i></button></th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td><input type="text" name="witnesses[0][name]" class="form-control witnessName"
+                                        required></td>
+                                <td><input type="text" name="witnesses[0][phone]" class="form-control" required></td>
+                                <td><button type="button" class="btn btn-danger btn-sm removeRow"><i
+                                            class="bi bi-trash"></i></button></td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- Schedule + Channel -->
+                <div class="card card-body mb-3">
+                    <h5>Schedule & Channel</h5>
+                    <div class="form-check">
+                        <input class="form-check-input" type="checkbox" name="schedules[]" value="10_days_before"
+                            id="sched10">
+                        <label class="form-check-label" for="sched10">10 Days Before</label>
+                    </div>
+                    <div class="form-check">
+                        <input class="form-check-input" type="checkbox" name="schedules[]" value="3_days_before"
+                            id="sched3">
+                        <label class="form-check-label" for="sched3">3 Days Before</label>
+                    </div>
+                    <div class="form-check">
+                        <input class="form-check-input" type="checkbox" name="schedules[]" value="send_now" id="schedNow">
+                        <label class="form-check-label" for="schedNow">Send Now</label>
+                    </div>
+
+                    <div class="mt-2">
+                        <label>Channel</label>
+                        <select name="channel" class="form-select" required>
+                            <option value="sms">SMS</option>
+                            <option value="whatsapp">WhatsApp</option>
+                            <option value="both">Both</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="card card-body mb-3">
+                    <h5>Preview Message</h5>
+                    <div id="previewMessage" class="border p-2 bg-light">Enter details to see preview.</div>
+                </div>
+
+                <button type="submit" id="submitBtn" class="btn btn-primary">Submit & Send</button>
+            </form>
+        </div>
+    </div>
+
+    @push('scripts')
+        <script>
+            document.addEventListener('DOMContentLoaded', function() {
+                // Division → District → Court dependency
+                const divisionSelect = document.getElementById('division_id');
+                const districtSelect = document.getElementById('district_id');
+                const courtSelect = document.getElementById('court_id');
+
+                divisionSelect?.addEventListener('change', function() {
+                    const divisionId = this.value;
+                    districtSelect.innerHTML = '<option value="">Select District</option>';
+                    courtSelect.innerHTML = '<option value="">Select Court</option>';
+                    if (!divisionId) return;
+
+                    fetch('{{ url('admin/divisions') }}/' + divisionId + '/districts')
+                        .then(res => res.json())
+                        .then(data => {
+                            data.forEach(d => {
+                                const opt = document.createElement('option');
+                                opt.value = d.id;
+                                opt.textContent = d.name_en;
+                                districtSelect.appendChild(opt);
+                            });
+                        });
+                });
+
+                districtSelect?.addEventListener('change', function() {
+                    const districtId = this.value;
+                    courtSelect.innerHTML = '<option value="">Select Court</option>';
+                    if (!districtId) return;
+
+                    fetch('{{ url('admin/districts') }}/' + districtId + '/courts')
+                        .then(res => res.json())
+                        .then(data => {
+                            data.forEach(c => {
+                                const opt = document.createElement('option');
+                                opt.value = c.id;
+                                opt.textContent = c.name_en;
+                                courtSelect.appendChild(opt);
+                            });
+                        });
+                });
+
+                // Witness rows
+                let rowIndex = 1;
+                let isSubmitting = false;
+
+                document.getElementById('addRow').addEventListener('click', function() {
+                    let tbody = document.querySelector('#witnessTable tbody');
+                    let row = `<tr>
+            <td><input type="text" name="witnesses[${rowIndex}][name]" class="form-control witnessName" required></td>
+            <td><input type="text" name="witnesses[${rowIndex}][phone]" class="form-control" required></td>
+            <td><button type="button" class="btn btn-danger btn-sm removeRow"><i class="bi bi-trash"></i></button></td>
+        </tr>`;
+                    tbody.insertAdjacentHTML('beforeend', row);
+                    rowIndex++;
+                    updatePreview();
+                });
+
+                document.querySelector('#witnessTable').addEventListener('click', function(e) {
+                    if (e.target.closest('.removeRow')) {
+                        e.target.closest('tr').remove();
+                        updatePreview();
+                    }
+                });
+
+                // Trigger preview on dynamic input
+                document.querySelector('#witnessTable').addEventListener('input', function(e) {
+                    if (e.target.classList.contains('witnessName')) updatePreview();
+                });
+
+                function updatePreview() {
+                    let caseNo = document.getElementById('caseNo').value || '';
+                    let hearingDate = document.getElementById('hearingDate').value || '';
+                    let channel = document.querySelector('select[name="channel"]').value || 'sms';
+
+                    let previewHtml = '';
+                    document.querySelectorAll('.witnessName').forEach((input, idx) => {
+                        let name = input.value || '{witness_name}';
+                        let message =
+                            `Dear {witness_name}, this is a reminder for case {case_no} on {hearing_date}.`
+                            .replace('{witness_name}', name)
+                            .replace('{case_no}', caseNo)
+                            .replace('{hearing_date}', hearingDate);
+
+                        if (channel === 'both') {
+                            previewHtml += `<strong>Witness ${idx+1} - SMS:</strong> ${message}<br>`;
+                            previewHtml += `<strong>Witness ${idx+1} - WhatsApp:</strong> ${message}<br><br>`;
+                        } else {
+                            previewHtml +=
+                                `<strong>Witness ${idx+1} - ${channel.toUpperCase()}:</strong> ${message}<br><br>`;
+                        }
+                    });
+                    document.getElementById('previewMessage').innerHTML = previewHtml ||
+                    'Enter details to see preview.';
+                }
+
+                // Preview triggers
+                ['change', 'input'].forEach(evt => {
+                    document.getElementById('caseNo').addEventListener(evt, updatePreview);
+                    document.getElementById('hearingDate').addEventListener(evt, updatePreview);
+                    document.querySelector('select[name="channel"]').addEventListener(evt, updatePreview);
+                });
+
+                // Form submission
+                document.getElementById('caseForm').addEventListener('submit', function(e) {
+                    e.preventDefault();
+                    if (isSubmitting) return;
+
+                    // Frontend validation for dropdowns
+                    const divisionId = document.getElementById('division_id').value;
+                    const districtId = document.getElementById('district_id').value;
+                    const courtId = document.getElementById('court_id').value;
+
+                    if (!divisionId || !districtId || !courtId) {
+                        Swal.fire('Error', 'Please select Division, District, and Court.', 'error');
+                        return;
+                    }
+
+                    isSubmitting = true;
+                    let btn = document.getElementById('submitBtn');
+                    btn.disabled = true;
+
+                    let formData = new FormData(this);
+
+                    fetch("{{ route('admin.cases.store_send') }}", {
+                            method: "POST",
+                            body: formData,
+                            credentials: 'same-origin',
+                            headers: {
+                                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')
+                                    .getAttribute('content')
+                            }
+                        })
+                        .then(res => res.json())
+                        .then(res => {
+                            if (res.success) {
+                                Swal.fire('Success', res.message, 'success');
+                                this.reset();
+                                document.getElementById('previewMessage').innerHTML =
+                                    'Enter details to see preview.';
+                                rowIndex = 1;
+                                document.querySelector('#witnessTable tbody').innerHTML = `<tr>
+                <td><input type="text" name="witnesses[0][name]" class="form-control witnessName" required></td>
+                <td><input type="text" name="witnesses[0][phone]" class="form-control" required></td>
+                <td><button type="button" class="btn btn-danger btn-sm removeRow"><i class="bi bi-trash"></i></button></td>
+            </tr>`;
+                            } else {
+                                Swal.fire('Error', res.message, 'error');
+                            }
+                            btn.disabled = false;
+                            isSubmitting = false;
+                        })
+                        .catch(err => {
+                            Swal.fire('Error', 'Something went wrong!', 'error');
+                            btn.disabled = false;
+                            isSubmitting = false;
+                        });
+                });
+
+            });
+        </script>
+    @endpush
+@endsection

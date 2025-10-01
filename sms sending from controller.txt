@@ -1,0 +1,16 @@
+use App\Services\SmsService;
+
+public function sendNotifications(array $messages)
+{
+    $smsService = new SmsService();
+
+    $response = $smsService->send($messages);
+
+    if (($response['response_code'] ?? null) === 202) {
+        // SMS successfully submitted
+        return ['success' => true, 'message' => $response['message_map']];
+    } else {
+        // Failed, handle specific codes
+        return ['success' => false, 'message' => $response['message_map'] ?? 'Unknown error'];
+    }
+}

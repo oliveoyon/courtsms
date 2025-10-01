@@ -1,0 +1,28 @@
+<?php
+return [
+    'create_case_send' => 'কেস তৈরি করুন ও নোটিফিকেশন পাঠান',
+    'case_details'    => 'কেসের বিবরণ',
+    'division'        => 'বিভাগ',
+    'select_division' => 'বিভাগ নির্বাচন করুন',
+    'district'        => 'জেলা',
+    'select_district' => 'জেলা নির্বাচন করুন',
+    'court'           => 'কোর্ট',
+    'select_court'    => 'কোর্ট নির্বাচন করুন',
+    'case_no'         => 'কেস নং',
+    'hearing_date'    => 'শুনানির তারিখ',
+    'hearing_time'    => 'শুনানির সময়',
+    'notes'           => 'নোটস',
+    'witnesses'       => 'সাক্ষী',
+    'name'            => 'নাম',
+    'phone'           => 'ফোন',
+    'schedule'        => 'সময়সূচি',
+    '10_days_before'  => '১০ দিন আগে',
+    '3_days_before'   => '৩ দিন আগে',
+    'send_now'        => 'এখন পাঠান',
+    'preview_message' => 'পূর্বরূপ বার্তা',
+    'enter_preview'   => 'পূর্বরূপ দেখার জন্য বিবরণ লিখুন।',
+    'submit_send'     => 'সাবমিট & পাঠান',
+    'success_save' => 'কেস, সাক্ষী, সময়সূচি এবং নোটিফিকেশন সফলভাবে সংরক্ষণ হয়েছে!',
+    'send_sms' => 'এসএমএস পাঠান',
+
+];

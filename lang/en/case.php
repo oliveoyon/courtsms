@@ -1,0 +1,28 @@
+<?php
+return [
+    'create_case_send' => 'Create Case & Send Notification',
+    'case_details'    => 'Case Details',
+    'division'        => 'Division',
+    'select_division' => 'Select Division',
+    'district'        => 'District',
+    'select_district' => 'Select District',
+    'court'           => 'Court',
+    'select_court'    => 'Select Court',
+    'case_no'         => 'Case No',
+    'hearing_date'    => 'Hearing Date',
+    'hearing_time'    => 'Hearing Time',
+    'notes'           => 'Notes',
+    'witnesses'       => 'Witnesses',
+    'name'            => 'Name',
+    'phone'           => 'Phone',
+    'schedule'        => 'Schedule',
+    '10_days_before'  => '10 Days Before',
+    '3_days_before'   => '3 Days Before',
+    'send_now'        => 'Send Now',
+    'preview_message' => 'Preview Message',
+    'enter_preview'   => 'Enter details to see preview.',
+    'submit_send'     => 'Submit & Send',
+    'success_save' => 'Case, witnesses, schedules, and notifications saved successfully!',
+    'send_sms' => 'Send SMS',
+
+];

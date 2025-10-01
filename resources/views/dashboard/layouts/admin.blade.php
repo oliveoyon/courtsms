@@ -43,7 +43,7 @@
 <body class="fixed-header sidebar-expand-lg sidebar-open bg-body-tertiary">
     <div class="app-wrapper">
         {{-- <nav class="app-header navbar navbar-expand bg-body"> --}}
-        <nav  class="app-header navbar navbar-expand bg-success-subtle" data-bs-theme="light">
+        <nav class="app-header navbar navbar-expand bg-success-subtle" data-bs-theme="light">
             <div class="container-fluid">
                 <ul class="navbar-nav">
                     <li class="nav-item">
@@ -224,52 +224,52 @@
 
                         <!-- User Management -->
                         @canany(['View Permission Group', 'View Permission', 'View Roles', 'View Users'])
-                        <li class="nav-item">
-                            <a href="#" class="nav-link">
-                                <i class="nav-icon bi bi-people"></i>
-                                <p>
-                                    {{ __('messages.user_management') }}
-                                    <i class="nav-arrow bi bi-chevron-right"></i>
-                                </p>
-                            </a>
-                            <ul class="nav nav-treeview">
-                                @can('View Permission Group')
-                                    <li class="nav-item">
-                                        <a href="{{ route('admin.permission-groups.index') }}" class="nav-link">
-                                            <i class="nav-icon bi bi-diagram-3"></i>
-                                            <p>{{ __('messages.permission_groups') }}</p>
-                                        </a>
-                                    </li>
-                                @endcan
+                            <li class="nav-item">
+                                <a href="#" class="nav-link">
+                                    <i class="nav-icon bi bi-people"></i>
+                                    <p>
+                                        {{ __('messages.user_management') }}
+                                        <i class="nav-arrow bi bi-chevron-right"></i>
+                                    </p>
+                                </a>
+                                <ul class="nav nav-treeview">
+                                    @can('View Permission Group')
+                                        <li class="nav-item">
+                                            <a href="{{ route('admin.permission-groups.index') }}" class="nav-link">
+                                                <i class="nav-icon bi bi-diagram-3"></i>
+                                                <p>{{ __('messages.permission_groups') }}</p>
+                                            </a>
+                                        </li>
+                                    @endcan
 
-                                @can('View Permission')
-                                    <li class="nav-item">
-                                        <a href="{{ route('admin.permissions.index') }}" class="nav-link">
-                                            <i class="nav-icon bi bi-shield-lock"></i>
-                                            <p>{{ __('messages.permissions') }}</p>
-                                        </a>
-                                    </li>
-                                @endcan
+                                    @can('View Permission')
+                                        <li class="nav-item">
+                                            <a href="{{ route('admin.permissions.index') }}" class="nav-link">
+                                                <i class="nav-icon bi bi-shield-lock"></i>
+                                                <p>{{ __('messages.permissions') }}</p>
+                                            </a>
+                                        </li>
+                                    @endcan
 
-                                @can('View Roles')
-                                    <li class="nav-item">
-                                        <a href="{{ route('admin.roles.index') }}" class="nav-link">
-                                            <i class="nav-icon bi bi-person-badge"></i>
-                                            <p>{{ __('messages.roles') }}</p>
-                                        </a>
-                                    </li>
-                                @endcan
+                                    @can('View Roles')
+                                        <li class="nav-item">
+                                            <a href="{{ route('admin.roles.index') }}" class="nav-link">
+                                                <i class="nav-icon bi bi-person-badge"></i>
+                                                <p>{{ __('messages.roles') }}</p>
+                                            </a>
+                                        </li>
+                                    @endcan
 
-                                @can('View Users')
-                                    <li class="nav-item">
-                                        <a href="{{ route('admin.users.index') }}" class="nav-link">
-                                            <i class="nav-icon bi bi-people"></i>
-                                            <p>{{ __('messages.users') }}</p>
-                                        </a>
-                                    </li>
-                                @endcan
-                            </ul>
-                        </li>
+                                    @can('View Users')
+                                        <li class="nav-item">
+                                            <a href="{{ route('admin.users.index') }}" class="nav-link">
+                                                <i class="nav-icon bi bi-people"></i>
+                                                <p>{{ __('messages.users') }}</p>
+                                            </a>
+                                        </li>
+                                    @endcan
+                                </ul>
+                            </li>
                         @endcanany
 
                         <!-- Master Data -->
@@ -310,6 +310,15 @@
                                         </li>
                                     @endcan
                                 </ul>
+                            </li>
+                        @endcanany
+
+                        @canany(['SMS Form'])
+                            <li class="nav-item">
+                                <a href="{{ route('admin.cases.create_send') }}" class="nav-link">
+                                    <i class="nav-icon bi bi-chat-dots"></i>
+                                    <p>{{ __('case.send_sms') }}</p>
+                                </a>
                             </li>
                         @endcanany
 
