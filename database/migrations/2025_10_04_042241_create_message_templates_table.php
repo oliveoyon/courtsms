@@ -21,7 +21,17 @@ return new class extends Migration
 
             $table->enum('channel', ['sms', 'whatsapp', 'both', 'email'])->default('sms');
             $table->boolean('is_active')->default(true);
+
+            // Simple category_id column
+            $table->unsignedBigInteger('category_id')->nullable();
+
             $table->timestamps();
+
+            // Optional: foreign key
+            $table->foreign('category_id')
+                  ->references('id')
+                  ->on('message_template_categories')
+                  ->onDelete('set null');
         });
     }
 

@@ -10,6 +10,8 @@ return [
     'divisions'         => 'Divisions',
     'districts'         => 'Districts',
     'courts'            => 'Courts',
+    'template_category' => 'Msg Template Category',
+    'message_templates' => 'Message Template',
     'theme_generate'    => 'Theme Generate',
     'logout'            => 'Logout',
 

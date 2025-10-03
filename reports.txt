@@ -1,0 +1,120 @@
+# 🔎 **High-Level Report Categories**
+
+### 1. **Case Management Reports**
+
+* **Total cases created** (filter by date range, division, district, court).
+* **Cases by hearing date** (upcoming, ongoing, past).
+* **Case outcome report** (if later you add verdict/outcome fields).
+* **Cases by creator** (which staff is creating how many cases).
+* **Pending vs Completed hearings**.
+
+---
+
+### 2. **Witness Reports**
+
+* **Total witnesses per case**.
+* **Attendance tracking**
+
+  * Appeared / Absent / Excused (percentage & counts).
+* **Witness follow-ups required** (those absent or excused).
+* **Phone coverage** (how many witnesses have valid numbers vs missing/invalid).
+* **Witnesses notified vs not notified** (to check gaps).
+
+---
+
+### 3. **Notification Reports**
+
+* **Notifications sent by channel** (SMS, WhatsApp, Both, Email future).
+* **Delivery status summary**
+
+  * Pending, Sent, Delivered, Failed, Cancelled.
+* **Average delivery time** (from scheduled to sent).
+* **Failure reasons** (if captured in response JSON).
+* **Manual vs Scheduled notifications** (staff-initiated vs auto-sent).
+* **Reminders per case** (e.g., Case 1234 → 3 SMS sent, 1 WhatsApp sent).
+* **Cost report** (if you integrate SMS gateway billing → total SMS sent × rate).
+
+---
+
+### 4. **Template Usage Reports**
+
+* **Most used templates** (English SMS vs Bangla SMS vs WhatsApp).
+* **Channel effectiveness** → Which channel gets better delivery/response.
+* **Template changes log** (track if templates were updated, by whom).
+
+---
+
+### 5. **Schedule Reports**
+
+* **Upcoming schedules** (by case, by court).
+* **Overdue schedules** (schedule date passed but still pending).
+* **Schedule completion rate** (how many schedules executed successfully).
+* **Cancelled schedules report** (who cancelled, why).
+
+---
+
+### 6. **Performance Reports**
+
+* **District-level performance**
+
+  * % of cases notified on time.
+  * % witness attendance rate after notifications.
+* **Court-level staff activity**
+
+  * Cases entered per staff.
+  * Notifications sent per staff.
+* **System-wide uptime (optional)** if you log failures/errors.
+
+---
+
+## 🎯 **User-Based Report Access**
+
+* **Ministry (Super Admin):**
+
+  * All reports across all divisions/districts/courts.
+  * Compare districts (leaderboard style: best performing district on attendance, notification coverage, etc).
+
+* **District Admin / Focal Point:**
+
+  * Only their district (but all courts inside it).
+  * See district summary + breakdown by courts.
+
+* **Court Admin / Staff:**
+
+  * Only their court’s cases, witnesses, and notifications.
+
+---
+
+## 📊 **Example Report Visualizations**
+
+1. **Dashboard KPIs:**
+
+   * Total Cases this month
+   * Total Witnesses notified
+   * % Notifications Delivered
+   * Attendance Rate
+
+2. **Bar/Line Charts:**
+
+   * Cases trend over time (per month).
+   * Notifications sent vs delivered trend.
+   * Witness attendance % by court.
+
+3. **Tabular Reports (exportable CSV/PDF):**
+
+   * List of cases with witness attendance and notification history.
+   * Failed notifications with phone numbers for follow-up.
+
+---
+
+👉 So in short:
+
+* **Case-centric reports** (what’s happening legally).
+* **Witness-centric reports** (who came, who was notified).
+* **Notification-centric reports** (communication effectiveness).
+* **Template/schedule usage reports** (system optimization).
+* **Performance reports** (accountability by district/court/staff).
+
+---
+
+Would you like me to **design a sample reporting dashboard layout** (like which cards, which charts, which tables to put) for ministry vs district vs court? That way you can directly plan UI/UX.

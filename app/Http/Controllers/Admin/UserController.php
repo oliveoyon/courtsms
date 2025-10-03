@@ -75,7 +75,8 @@ class UserController extends Controller
             'permissionGroups',
             'userRoles',
             'directPermissions',
-            'divisions'
+            'divisions',
+            'loggedInUser'
         ));
     }
 

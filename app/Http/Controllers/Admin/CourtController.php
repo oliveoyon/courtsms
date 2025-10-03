@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use App\Models\Court;
 use App\Models\District;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Validation\Rule;
 
 class CourtController extends Controller
@@ -20,11 +21,14 @@ class CourtController extends Controller
 
     public function index()
     {
+        $user = Auth::user();
         $courts = Court::with('district')->get();
-        $districts = District::all();
+        $districts = $user->district_id
+            ? District::where('id', $user->district_id)->get()
+            : District::all();
+
         return view('admin.courts.index', compact('courts', 'districts'));
     }
-
     public function store(Request $request)
     {
         try {

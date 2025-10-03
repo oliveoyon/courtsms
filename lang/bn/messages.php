@@ -10,6 +10,8 @@ return [
     'divisions'         => 'বিভাগ',
     'districts'         => 'জেলা',
     'courts'            => 'আদালত',
+    'template_category' => 'মেসেজ টেমপ্লেট ক্যাটেগরি',
+    'message_templates' => 'মেসেজ টেমপ্লেট',
     'theme_generate'    => 'থিম জেনারেট',
     'logout'            => 'লগআউট',
 

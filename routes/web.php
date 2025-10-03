@@ -1,10 +1,13 @@
 <?php
 
+use App\Http\Controllers\Admin\CaseReportController;
 use App\Http\Controllers\Admin\CourtCaseController;
 use App\Http\Controllers\Admin\CourtController;
 use App\Http\Controllers\Admin\DashboardController;
 use App\Http\Controllers\Admin\DistrictController;
 use App\Http\Controllers\Admin\DivisionController;
+use App\Http\Controllers\Admin\MessageTemplateCategoryController;
+use App\Http\Controllers\Admin\MessageTemplateController;
 use App\Http\Controllers\Admin\PermissionController;
 use App\Http\Controllers\Admin\PermissionGroupController;
 use App\Http\Controllers\Admin\PermissionManagerController;
@@ -58,8 +61,11 @@ Route::prefix('admin')->name('admin.')->middleware(['auth'])->group(function () 
 
     Route::get('cases/create-and-send', [CourtCaseController::class, 'createAndSend'])->name('cases.create_send');
     Route::post('cases/create-and-send', [CourtCaseController::class, 'storeAndSend'])->name('cases.store_send');
+    Route::resource('message-templates', MessageTemplateController::class);
+    Route::resource('message-template-categories', MessageTemplateCategoryController::class);
 
-
+    // Report
+   
     // Route::get('permission-manager', [PermissionManagerController::class, 'index'])->name('permission-manager.index');
     // Route::get('permission-manager/{group}/permissions', [PermissionManagerController::class, 'groupPermissions'])->name('permission-manager.permissions');
     // Route::post('permission-manager/group', [PermissionManagerController::class, 'storeGroup'])->name('permission-manager.group.store');

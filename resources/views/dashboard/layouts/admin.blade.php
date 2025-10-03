@@ -273,7 +273,8 @@
                         @endcanany
 
                         <!-- Master Data -->
-                        @canany(['View Division', 'View District', 'View Court'])
+                        @canany(['View Division', 'View District', 'View Court', 'View Message Template Category', 'View
+                            Message Template'])
                             <li class="nav-item">
                                 <a href="#" class="nav-link">
                                     <i class="nav-icon bi bi-building"></i>
@@ -309,9 +310,29 @@
                                             </a>
                                         </li>
                                     @endcan
+
+                                    @can('View Message Template Category')
+                                        <li class="nav-item">
+                                            <a href="{{ route('admin.message-template-categories.index') }}"
+                                                class="nav-link">
+                                                <i class="nav-icon bi bi-list-columns"></i>
+                                                <p>{{ __('messages.template_category') }}</p>
+                                            </a>
+                                        </li>
+                                    @endcan
+
+                                    @can('View Message Template')
+                                        <li class="nav-item">
+                                            <a href="{{ route('admin.message-templates.index') }}" class="nav-link">
+                                                <i class="nav-icon bi bi-file-earmark-text"></i>
+                                                <p>{{ __('messages.message_templates') }}</p>
+                                            </a>
+                                        </li>
+                                    @endcan
                                 </ul>
                             </li>
                         @endcanany
+
 
                         @canany(['SMS Form'])
                             <li class="nav-item">

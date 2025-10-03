@@ -2,31 +2,20 @@
 @section('title', 'Permissions')
 
 @section('content')
+
     <div class="app-content-header py-3">
-        <div class="container-fluid">
-            <div class="row align-items-center">
-                <div class="col-sm-6">
-                    <h3 class="mb-0 page-title">Permissions</h3>
-                </div>
-                <div class="col-sm-6 text-end">
-                    <ol class="breadcrumb mb-0">
-                        <li class="breadcrumb-item"><a href="#">Home</a></li>
-                        <li class="breadcrumb-item active" aria-current="page">Permissions</li>
-                    </ol>
-                </div>
-            </div>
+        <div class="container-fluid d-flex justify-content-between align-items-center">
+            <h3 class="mb-0 page-title">Permissions</h3>
+            @can('Create Permission')
+                <button class="btn btn-success btn-modern" id="addPermissionBtn">
+                    <i class="bi bi-plus-circle"></i> Add Permission
+                </button>
+            @endcan
         </div>
     </div>
 
     <div class="app-content py-3">
         <div class="container-fluid">
-            <div class="mb-4 d-flex justify-content-end">
-                @can('Create Permission')
-                    <button class="btn btn-success btn-modern" id="addPermissionBtn">
-                        <i class="bi bi-plus-circle"></i> Add Permission
-                    </button>
-                @endcan
-            </div>
 
             <div class="accordion" id="permissionsAccordion">
                 @foreach ($groups as $group)
