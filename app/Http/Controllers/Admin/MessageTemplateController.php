@@ -12,10 +12,10 @@ class MessageTemplateController extends Controller
 {
     public function __construct()
     {
-        // $this->middleware('permission:View Message Template')->only(['index']);
-        // $this->middleware('permission:Create Message Template')->only(['store']);
-        // $this->middleware('permission:Edit Message Template')->only(['edit','update']);
-        // $this->middleware('permission:Delete Message Template')->only(['destroy']);
+        $this->middleware('permission:View Message Template')->only(['index']);
+        $this->middleware('permission:Create Message Template')->only(['store']);
+        $this->middleware('permission:Edit Message Template')->only(['edit','update']);
+        $this->middleware('permission:Delete Message Template')->only(['destroy']);
     }
 
     public function index()

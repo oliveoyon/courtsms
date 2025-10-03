@@ -31,9 +31,10 @@
 
     <!-- AdminLTE -->
     <link rel="stylesheet" href="{{ asset('dashboard/css/adminlte.css') }}">
+    {{-- <link rel="stylesheet" href="{{ asset('dashboard/css/style.css') }}"> --}}
 
     <!-- Bangla Font -->
-    <link rel="stylesheet" href="http://mdminhazulhaque.github.io/solaimanlipi/css/solaimanlipi.css" type="text/css">
+    {{-- <link rel="stylesheet" href="http://mdminhazulhaque.github.io/solaimanlipi/css/solaimanlipi.css" type="text/css"> --}}
 
     <!-- Page Specific Styles -->
     @stack('styles')

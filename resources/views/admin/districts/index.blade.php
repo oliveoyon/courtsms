@@ -21,7 +21,6 @@
                     <th>{{ __('district.name_bn') }}</th>
                     <th>{{ __('district.division') }}</th>
                     <th>{{ __('messages.status') }}</th>
-                    <th>{{ __('district.created_at') }}</th>
                     @canany(['Edit District', 'Delete District'])
                         <th>{{ __('district.actions') }}</th>
                     @endcanany
@@ -39,10 +38,9 @@
                             @if ($district->is_active)
                                 <span class="badge bg-success">{{ __('messages.active') }}</span>
                             @else
-                                <span class="badge bg-secondary">{{ __('messages.inactive') }}</span>
+                                <span class="badge bg-danger">{{ __('messages.inactive') }}</span>
                             @endif
                         </td>
-                        <td>{{ $district->created_at->format('Y-m-d') }}</td>
                         @canany(['Edit District', 'Delete District'])
                             <td>
                                 @can('Edit District')
@@ -223,164 +221,166 @@
     </style>
 @endpush
 @push('scripts')
-<script>
-document.addEventListener('DOMContentLoaded', function() {
-    const modal = new bootstrap.Modal(document.getElementById('districtModal'));
-    const addBtn = document.getElementById('addDistrictBtn');
-    const form = document.getElementById('districtForm');
-    const nameEnInput = document.getElementById('districtNameEn');
-    const nameBnInput = document.getElementById('districtNameBn');
-    const divisionSelect = document.getElementById('divisionSelect');
-    const statusSelect = document.getElementById('statusSelect');
-    const districtIdInput = document.getElementById('districtId');
-    const nameEnError = document.getElementById('nameEnError');
-    const nameBnError = document.getElementById('nameBnError');
-    const divisionError = document.getElementById('divisionError');
-    const token = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
-    const currentLocale = "{{ session('locale', app()->getLocale()) }}";
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const modal = new bootstrap.Modal(document.getElementById('districtModal'));
+            const addBtn = document.getElementById('addDistrictBtn');
+            const form = document.getElementById('districtForm');
+            const nameEnInput = document.getElementById('districtNameEn');
+            const nameBnInput = document.getElementById('districtNameBn');
+            const divisionSelect = document.getElementById('divisionSelect');
+            const statusSelect = document.getElementById('statusSelect');
+            const districtIdInput = document.getElementById('districtId');
+            const nameEnError = document.getElementById('nameEnError');
+            const nameBnError = document.getElementById('nameBnError');
+            const divisionError = document.getElementById('divisionError');
+            const token = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
+            const currentLocale = "{{ session('locale', app()->getLocale()) }}";
 
-    // === Open Add Modal ===
-    addBtn.addEventListener('click', () => {
-        form.reset();
-        districtIdInput.value = '';
-        document.getElementById('districtModalLabel').textContent = '{{ __('district.add') }}';
-        nameEnError.textContent = '';
-        nameBnError.textContent = '';
-        divisionError.textContent = '';
-        nameEnInput.classList.remove('is-invalid');
-        nameBnInput.classList.remove('is-invalid');
-        divisionSelect.classList.remove('is-invalid');
-        modal.show();
-    });
+            // === Open Add Modal ===
+            addBtn.addEventListener('click', () => {
+                form.reset();
+                districtIdInput.value = '';
+                document.getElementById('districtModalLabel').textContent = '{{ __('district.add') }}';
+                nameEnError.textContent = '';
+                nameBnError.textContent = '';
+                divisionError.textContent = '';
+                nameEnInput.classList.remove('is-invalid');
+                nameBnInput.classList.remove('is-invalid');
+                divisionSelect.classList.remove('is-invalid');
+                modal.show();
+            });
 
-    // === Open Edit Modal ===
-    document.addEventListener('click', function(e) {
-        if (e.target.closest('.editBtn')) {
-            const id = e.target.closest('.editBtn').dataset.id;
-            fetch(`/admin/districts/${id}/edit`)
-                .then(res => res.json())
-                .then(data => {
-                    districtIdInput.value = data.id;
-                    nameEnInput.value = data.name_en;
-                    nameBnInput.value = data.name_bn;
-                    divisionSelect.value = data.division_id;
-                    statusSelect.value = data.is_active ? 1 : 0;
-                    document.getElementById('districtModalLabel').textContent = '{{ __('district.edit') }}';
-                    nameEnError.textContent = '';
-                    nameBnError.textContent = '';
-                    divisionError.textContent = '';
-                    nameEnInput.classList.remove('is-invalid');
-                    nameBnInput.classList.remove('is-invalid');
-                    divisionSelect.classList.remove('is-invalid');
-                    modal.show();
-                });
-        }
-    });
-
-    // === Save District ===
-    form.addEventListener('submit', function(e) {
-        e.preventDefault();
-        nameEnError.textContent = '';
-        nameBnError.textContent = '';
-        divisionError.textContent = '';
-        nameEnInput.classList.remove('is-invalid');
-        nameBnInput.classList.remove('is-invalid');
-        divisionSelect.classList.remove('is-invalid');
-
-        const id = districtIdInput.value;
-        const url = id ? `/admin/districts/${id}` : '/admin/districts';
-        const method = id ? 'PUT' : 'POST';
-
-        fetch(url, {
-            method: method,
-            headers: {
-                'Content-Type': 'application/json',
-                'X-CSRF-TOKEN': token
-            },
-            body: JSON.stringify({
-                name_en: nameEnInput.value,
-                name_bn: nameBnInput.value,
-                division_id: divisionSelect.value,
-                is_active: statusSelect.value
-            })
-        }).then(async res => {
-            if (res.status === 422) {
-                const data = await res.json();
-                if (data.errors.name_en) {
-                    nameEnError.textContent = data.errors.name_en[0];
-                    nameEnInput.classList.add('is-invalid');
+            // === Open Edit Modal ===
+            document.addEventListener('click', function(e) {
+                if (e.target.closest('.editBtn')) {
+                    const id = e.target.closest('.editBtn').dataset.id;
+                    fetch(`/admin/districts/${id}/edit`)
+                        .then(res => res.json())
+                        .then(data => {
+                            districtIdInput.value = data.id;
+                            nameEnInput.value = data.name_en;
+                            nameBnInput.value = data.name_bn;
+                            divisionSelect.value = data.division_id;
+                            statusSelect.value = data.is_active ? 1 : 0;
+                            document.getElementById('districtModalLabel').textContent =
+                                '{{ __('district.edit') }}';
+                            nameEnError.textContent = '';
+                            nameBnError.textContent = '';
+                            divisionError.textContent = '';
+                            nameEnInput.classList.remove('is-invalid');
+                            nameBnInput.classList.remove('is-invalid');
+                            divisionSelect.classList.remove('is-invalid');
+                            modal.show();
+                        });
                 }
-                if (data.errors.name_bn) {
-                    nameBnError.textContent = data.errors.name_bn[0];
-                    nameBnInput.classList.add('is-invalid');
-                }
-                if (data.errors.division_id) {
-                    divisionError.textContent = data.errors.division_id[0];
-                    divisionSelect.classList.add('is-invalid');
-                }
-            } else {
-                return res.json();
-            }
-        }).then(data => {
-            if (data) {
-                const rowId = `district-${data.district.id}`;
-                const isActive = data.district.is_active == 1 || data.district.is_active === true;
-                const rowHtml = `
-<tr id="${rowId}">
-    <td>${data.district.id}</td>
-    <td>${data.district.name_en}</td>
-    <td>${data.district.name_bn}</td>
-    <td>${currentLocale === 'bn' ? (data.district.division?.name_bn ?? '-') : (data.district.division?.name_en ?? '-')}</td>
-    <td>
-        ${isActive 
-            ? (currentLocale === 'bn' ? '<span class="badge bg-success">সক্রিয়</span>' : '<span class="badge bg-success">Active</span>') 
-            : (currentLocale === 'bn' ? '<span class="badge bg-danger">নিষ্ক্রিয়</span>' : '<span class="badge bg-danger">Inactive</span>')}
-    </td>
-    <td>${data.district.created_at.split('T')[0]}</td>
-    <td>
-        <button class="btn btn-sm btn-info editBtn" data-id="${data.district.id}"><i class="bi bi-pencil-square"></i></button>
-        <button class="btn btn-sm btn-danger deleteBtn" data-id="${data.district.id}"><i class="bi bi-trash-fill"></i></button>
-    </td>
-</tr>`;
-                if (id) {
-                    document.getElementById(rowId).outerHTML = rowHtml;
-                } else {
-                    document.querySelector('#districtsTable tbody').insertAdjacentHTML('beforeend', rowHtml);
-                }
-                modal.hide();
-                Swal.fire('Success', data.message, 'success');
-            }
-        });
-    });
+            });
 
-    // === Delete District ===
-    document.addEventListener('click', function(e) {
-        if (e.target.closest('.deleteBtn')) {
-            const id = e.target.closest('.deleteBtn').dataset.id;
-            Swal.fire({
-                title: '{{ __('district.confirm_delete') }}',
-                text: '{{ __('district.confirm_delete_text') }}',
-                icon: 'warning',
-                showCancelButton: true,
-                confirmButtonColor: '#d33',
-                cancelButtonColor: '#3085d6',
-                confirmButtonText: '{{ __('district.yes_delete') }}'
-            }).then(result => {
-                if (result.isConfirmed) {
-                    fetch(`/admin/districts/${id}`, {
-                        method: 'DELETE',
-                        headers: {
-                            'X-CSRF-TOKEN': token
+            // === Save District ===
+            form.addEventListener('submit', function(e) {
+                e.preventDefault();
+                nameEnError.textContent = '';
+                nameBnError.textContent = '';
+                divisionError.textContent = '';
+                nameEnInput.classList.remove('is-invalid');
+                nameBnInput.classList.remove('is-invalid');
+                divisionSelect.classList.remove('is-invalid');
+
+                const id = districtIdInput.value;
+                const url = id ? `/admin/districts/${id}` : '/admin/districts';
+                const method = id ? 'PUT' : 'POST';
+
+                fetch(url, {
+                    method: method,
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRF-TOKEN': token
+                    },
+                    body: JSON.stringify({
+                        name_en: nameEnInput.value,
+                        name_bn: nameBnInput.value,
+                        division_id: divisionSelect.value,
+                        is_active: statusSelect.value
+                    })
+                }).then(async res => {
+                    if (res.status === 422) {
+                        const data = await res.json();
+                        if (data.errors.name_en) {
+                            nameEnError.textContent = data.errors.name_en[0];
+                            nameEnInput.classList.add('is-invalid');
                         }
-                    }).then(res => res.json())
-                      .then(data => {
-                        Swal.fire('Deleted!', data.message, 'success');
-                        document.getElementById(`district-${id}`).remove();
+                        if (data.errors.name_bn) {
+                            nameBnError.textContent = data.errors.name_bn[0];
+                            nameBnInput.classList.add('is-invalid');
+                        }
+                        if (data.errors.division_id) {
+                            divisionError.textContent = data.errors.division_id[0];
+                            divisionSelect.classList.add('is-invalid');
+                        }
+                    } else {
+                        return res.json();
+                    }
+                }).then(data => {
+                    if (data) {
+                        const rowId = `district-${data.district.id}`;
+                        const isActive = data.district.is_active == 1 || data.district.is_active ===
+                            true;
+                        const rowHtml = `
+                            <tr id="${rowId}">
+                                <td>${data.district.id}</td>
+                                <td>${data.district.name_en}</td>
+                                <td>${data.district.name_bn}</td>
+                                <td>${currentLocale === 'bn' ? (data.district.division?.name_bn ?? '-') : (data.district.division?.name_en ?? '-')}</td>
+                                <td>
+                                    ${isActive 
+                                        ? (currentLocale === 'bn' ? '<span class="badge bg-success">সক্রিয়</span>' : '<span class="badge bg-success">Active</span>') 
+                                        : (currentLocale === 'bn' ? '<span class="badge bg-danger">নিষ্ক্রিয়</span>' : '<span class="badge bg-danger">Inactive</span>')}
+                                </td>
+                                <td>
+                                    <button class="btn btn-sm btn-info editBtn" data-id="${data.district.id}"><i class="bi bi-pencil-square"></i></button>
+                                    <button class="btn btn-sm btn-danger deleteBtn" data-id="${data.district.id}"><i class="bi bi-trash-fill"></i></button>
+                                </td>
+                            </tr>`;
+                        if (id) {
+                            document.getElementById(rowId).outerHTML = rowHtml;
+                        } else {
+                            document.querySelector('#districtsTable tbody').insertAdjacentHTML(
+                                'beforeend', rowHtml);
+                        }
+                        modal.hide();
+                        Swal.fire('Success', data.message, 'success');
+                    }
+                });
+            });
+
+            // === Delete District ===
+            document.addEventListener('click', function(e) {
+                if (e.target.closest('.deleteBtn')) {
+                    const id = e.target.closest('.deleteBtn').dataset.id;
+                    Swal.fire({
+                        title: '{{ __('district.confirm_delete') }}',
+                        text: '{{ __('district.confirm_delete_text') }}',
+                        icon: 'warning',
+                        showCancelButton: true,
+                        confirmButtonColor: '#d33',
+                        cancelButtonColor: '#3085d6',
+                        confirmButtonText: '{{ __('district.yes_delete') }}'
+                    }).then(result => {
+                        if (result.isConfirmed) {
+                            fetch(`/admin/districts/${id}`, {
+                                    method: 'DELETE',
+                                    headers: {
+                                        'X-CSRF-TOKEN': token
+                                    }
+                                }).then(res => res.json())
+                                .then(data => {
+                                    Swal.fire('Deleted!', data.message, 'success');
+                                    document.getElementById(`district-${id}`).remove();
+                                });
+                        }
                     });
                 }
             });
-        }
-    });
-});
-</script>
+        });
+    </script>
 @endpush

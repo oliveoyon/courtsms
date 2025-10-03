@@ -23,9 +23,11 @@ class CourtController extends Controller
     {
         $user = Auth::user();
         $courts = Court::with('district')->get();
+
         $districts = $user->district_id
-            ? District::where('id', $user->district_id)->get()
-            : District::all();
+            ? District::where('id', $user->district_id)->where('is_active', 1)->get()
+            : District::where('is_active', 1)->get();
+
 
         return view('admin.courts.index', compact('courts', 'districts'));
     }

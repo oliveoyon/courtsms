@@ -92,7 +92,7 @@ class DivisionController extends Controller
     // Get all districts under a division
     public function districts(Division $division)
     {
-        $districts = $division->districts()->with('courts')->get();
+        $districts = $division->districts()->where('is_active', 1)->with('courts')->get();
         return response()->json($districts);
     }
 }

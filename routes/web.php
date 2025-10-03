@@ -1,6 +1,5 @@
 <?php
 
-use App\Http\Controllers\Admin\CaseReportController;
 use App\Http\Controllers\Admin\CourtCaseController;
 use App\Http\Controllers\Admin\CourtController;
 use App\Http\Controllers\Admin\DashboardController;
@@ -10,15 +9,12 @@ use App\Http\Controllers\Admin\MessageTemplateCategoryController;
 use App\Http\Controllers\Admin\MessageTemplateController;
 use App\Http\Controllers\Admin\PermissionController;
 use App\Http\Controllers\Admin\PermissionGroupController;
-use App\Http\Controllers\Admin\PermissionManagerController;
 use App\Http\Controllers\Admin\RoleController;
-use App\Http\Controllers\Admin\TestController;
 use App\Http\Controllers\Admin\UserController;
 use App\Http\Controllers\LanguageController;
 use App\Http\Controllers\ProfileController;
 use Illuminate\Support\Facades\Route;
-use Illuminate\Support\Facades\App;
-use Illuminate\Support\Facades\Session;
+
 
 Route::get('/', function () { return view('welcome'); });
 

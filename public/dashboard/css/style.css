@@ -1,3 +1,6 @@
-body {
-    /* font-family: 'SolaimanLipi', sans-serif;; */
+@font-face { 
+    font-family: SolaimanLipi; 
+    src: local('SolaimanLipi'),
+         url('../fonts/SolaimanLipi.ttf') format('ttf'),
+         url('../fonts/SolaimanLipi.ttf') format('ttf');
     }

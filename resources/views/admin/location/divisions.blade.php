@@ -20,7 +20,6 @@
                     <th>{{ __('messages.name_en') }}</th>
                     <th>{{ __('messages.name_bn') }}</th>
                     <th>{{ __('messages.status') }}</th>
-                    <th>{{ __('messages.created_at') }}</th>
                     @canany(['Edit Division', 'Delete Division'])
                         <th>{{ __('messages.actions') }}</th>
                     @endcanany
@@ -39,7 +38,6 @@
                                 <span class="badge bg-secondary">{{ __('messages.inactive') }}</span>
                             @endif
                         </td>
-                        <td>{{ $division->created_at->format('Y-m-d') }}</td>
                         @canany(['Edit Division', 'Delete Division'])
                             <td>
                                 @can('Edit Division')
