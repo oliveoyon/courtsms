@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\Admin\CourtAppearanceController;
 use App\Http\Controllers\Admin\CourtCaseController;
 use App\Http\Controllers\Admin\CourtController;
 use App\Http\Controllers\Admin\DashboardController;
@@ -12,11 +13,14 @@ use App\Http\Controllers\Admin\PermissionGroupController;
 use App\Http\Controllers\Admin\RoleController;
 use App\Http\Controllers\Admin\UserController;
 use App\Http\Controllers\LanguageController;
+use App\Http\Controllers\PdfController;
 use App\Http\Controllers\ProfileController;
 use Illuminate\Support\Facades\Route;
 
 
-Route::get('/', function () { return view('welcome'); });
+Route::get('/', function () {
+    return view('welcome');
+});
 
 Route::get('language/{locale}', [LanguageController::class, 'setLocale'])->name('locale.set');
 
@@ -60,8 +64,21 @@ Route::prefix('admin')->name('admin.')->middleware(['auth'])->group(function () 
     Route::resource('message-templates', MessageTemplateController::class);
     Route::resource('message-template-categories', MessageTemplateCategoryController::class);
 
+    Route::get('court-appearance', [CourtAppearanceController::class, 'index'])
+        ->name('court-appearance.index');
+
+    Route::post('court-appearance/fetch', [CourtAppearanceController::class, 'fetchWitnesses'])
+        ->name('court-appearance.fetch');
+
+    Route::put('court-appearance/{witness}/update-status', [CourtAppearanceController::class, 'updateStatus'])
+        ->name('court-appearance.update-status');
+
+    Route::put('court-appearance/reschedule/{case}', [CourtAppearanceController::class, 'reschedule'])
+        ->name('court-appearance.reschedule');
+
+
     // Report
-   
+
     // Route::get('permission-manager', [PermissionManagerController::class, 'index'])->name('permission-manager.index');
     // Route::get('permission-manager/{group}/permissions', [PermissionManagerController::class, 'groupPermissions'])->name('permission-manager.permissions');
     // Route::post('permission-manager/group', [PermissionManagerController::class, 'storeGroup'])->name('permission-manager.group.store');
@@ -70,7 +87,7 @@ Route::prefix('admin')->name('admin.')->middleware(['auth'])->group(function () 
     // Route::post('permission-manager/permission', [PermissionManagerController::class, 'storePermission'])->name('permission-manager.permission.store');
     // Route::put('permission-manager/permission/{id}', [PermissionManagerController::class, 'updatePermission'])->name('permission-manager.permission.update');
     // Route::delete('permission-manager/permission/{id}', [PermissionManagerController::class, 'destroyPermission'])->name('permission-manager.permission.destroy');
-    
+
 });
 
 require __DIR__ . '/auth.php';

@@ -1,6 +1,14 @@
 @font-face { 
-    font-family: SolaimanLipi; 
-    src: local('SolaimanLipi'),
-         url('../fonts/SolaimanLipi.ttf') format('ttf'),
-         url('../fonts/SolaimanLipi.ttf') format('ttf');
-    }
+    font-family: 'SolaimanLipi'; 
+    src: url('fonts/SolaimanLipi.ttf') format('truetype');
+}
+
+@font-face { 
+    font-family: 'Arial'; 
+    src: url('fonts/Arial.ttf') format('truetype');
+}
+
+@font-face { 
+    font-family: 'Times'; 
+    src: url('fonts/Times.ttf') format('truetype');
+}

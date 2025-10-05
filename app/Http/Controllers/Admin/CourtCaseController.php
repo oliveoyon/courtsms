@@ -148,6 +148,8 @@ class CourtCaseController extends Controller
                                 'message' => $smsMessage
                             ]]);
 
+                            // dd($smsResponse);
+
                             Notification::where('schedule_id', $schedule->id)
                                 ->where('witness_id', $id)
                                 ->update([

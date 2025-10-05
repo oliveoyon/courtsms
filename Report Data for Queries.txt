@@ -1,0 +1,125 @@
+Schema::create('divisions', function (Blueprint $table) {
+            $table->id();
+            $table->string('name_en')->unique();
+            $table->string('name_bn')->unique();
+            $table->boolean('is_active')->default(true);
+            $table->timestamps();
+        });
+
+Schema::create('districts', function (Blueprint $table) {
+            $table->id();
+            $table->foreignId('division_id')
+                ->constrained('divisions')
+                ->restrictOnDelete(); // prevent accidental deletion
+            $table->string('name_en');
+            $table->string('name_bn');
+            $table->boolean('is_active')->default(true);
+            $table->timestamps();
+        });
+
+Schema::create('courts', function (Blueprint $table) {
+            $table->id();
+            $table->foreignId('district_id')
+                ->constrained('districts')
+                ->restrictOnDelete(); // prevent accidental deletion
+            $table->string('name_en');
+            $table->string('name_bn');
+            $table->boolean('is_active')->default(true);
+            $table->timestamps();
+        });
+
+Schema::create('users', function (Blueprint $table) {
+            $table->id();
+            $table->foreignId('division_id')->nullable()->constrained()->nullOnDelete();
+            $table->foreignId('district_id')->nullable()->constrained()->nullOnDelete();
+            $table->foreignId('court_id')->nullable()->constrained()->nullOnDelete();
+            $table->string('name');
+            $table->string('email')->unique();
+            $table->string('phone_number', 15)->nullable();
+            $table->timestamp('email_verified_at')->nullable();
+            $table->string('password');
+            $table->boolean('is_active')->default(true);
+            $table->rememberToken();
+            $table->timestamps();
+        });
+
+Schema::create('cases', function (Blueprint $table) {
+            $table->id();
+            $table->string('case_no'); // entered by staff
+            $table->foreignId('court_id')->constrained()->cascadeOnDelete();
+            $table->date('hearing_date');
+            $table->time('hearing_time')->nullable();
+            $table->text('notes')->nullable();
+            $table->foreignId('created_by')->constrained('users')->cascadeOnDelete();
+            $table->timestamps();
+        });
+
+Schema::create('witnesses', function (Blueprint $table) {
+            $table->id();
+            $table->foreignId('case_id')->constrained('cases')->cascadeOnDelete();
+            $table->string('name');
+            $table->string('phone');
+            $table->enum('appeared_status', ['pending', 'appeared', 'absent', 'excused'])
+                  ->default('pending');
+            $table->text('remarks')->nullable();
+            $table->timestamps();
+        });
+
+Schema::create('notifications', function (Blueprint $table) {
+            $table->id();
+            $table->foreignId('schedule_id')->nullable()->constrained('notification_schedules')->cascadeOnDelete();
+            $table->foreignId('witness_id')->constrained('witnesses')->cascadeOnDelete();
+            $table->enum('channel', ['sms', 'whatsapp', 'both'])->default('sms');
+            $table->enum('status', ['pending', 'sent', 'delivered', 'failed', 'cancelled'])->default('pending');
+            $table->dateTime('sent_at')->nullable();
+            $table->json('response')->nullable();
+            $table->timestamps();
+        });
+
+Schema::create('notification_schedules', function (Blueprint $table) {
+            $table->id();
+            $table->foreignId('case_id')->constrained('cases')->cascadeOnDelete();
+            $table->foreignId('template_id')->constrained('message_templates')->cascadeOnDelete();
+            $table->enum('channel', ['sms','whatsapp','both'])->default('sms');
+            $table->enum('status', ['active','inactive'])->default('active');
+            $table->dateTime('schedule_date')->nullable();
+            $table->time('schedule_time')->nullable();
+            $table->foreignId('created_by')->constrained('users')->cascadeOnDelete();
+            $table->timestamps();
+        });
+
+Optional
+
+Schema::create('message_template_categories', function (Blueprint $table) {
+            $table->id();
+            $table->string('name_en');
+            $table->string('name_bn')->nullable();
+            $table->boolean('is_active')->default(true);
+            $table->timestamps();
+        });
+
+Schema::create('message_templates', function (Blueprint $table) {
+            $table->id();
+            $table->string('title'); // e.g., CourtSMS, English, Bangla etc.
+
+            // Separate bodies for each channel and language
+            $table->text('body_en_sms')->nullable();
+            $table->text('body_en_whatsapp')->nullable();
+            $table->text('body_bn_sms')->nullable();
+            $table->text('body_bn_whatsapp')->nullable();
+            $table->text('body_email')->nullable(); // Email content (English)
+
+            $table->enum('channel', ['sms', 'whatsapp', 'both', 'email'])->default('sms');
+            $table->boolean('is_active')->default(true);
+
+            // Simple category_id column
+            $table->unsignedBigInteger('category_id')->nullable();
+
+            $table->timestamps();
+
+            // Optional: foreign key
+            $table->foreign('category_id')
+                  ->references('id')
+                  ->on('message_template_categories')
+                  ->onDelete('set null');
+        });
