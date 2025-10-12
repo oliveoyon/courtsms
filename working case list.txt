@@ -1,3 +1,165 @@
+Route::get('court-appearance', [CourtAppearanceController::class, 'index'])->name('court-appearance.index');
+Route::post('court-appearance/fetch', [CourtAppearanceController::class, 'fetchWitnesses'])->name('court-appearance.fetch');
+Route::put('court-appearance/{witness}/update-status', [CourtAppearanceController::class, 'updateStatus'])->name('court-appearance.update-status');
+Route::put('court-appearance/reschedule/{case}', [CourtAppearanceController::class, 'reschedule'])->name('court-appearance.reschedule');
+
+<?php
+
+namespace App\Http\Controllers\Admin;
+
+use App\Http\Controllers\Controller;
+use Illuminate\Http\Request;
+use App\Models\CourtCase;
+use App\Models\Witness;
+use App\Models\NotificationSchedule;
+use App\Models\Notification;
+use App\Models\MessageTemplate;
+use Carbon\Carbon;
+use Illuminate\Support\Facades\DB;
+
+class CourtAppearanceController extends Controller
+{
+    // Show the appearance panel
+    public function index()
+    {
+        $divisions = \App\Models\Division::with('districts.courts')->get();
+        $user = auth()->user();
+        return view('admin.cases.appearance_panel', compact('divisions', 'user'));
+    }
+
+    // Fetch witnesses for selected filters (AJAX)
+    public function fetchWitnesses(Request $request)
+    {
+        $request->validate([
+            'division_id' => 'required|exists:divisions,id',
+            'district_id' => 'required|exists:districts,id',
+            'court_id'    => 'required|exists:courts,id',
+            'date'        => 'required|date',
+        ]);
+
+        $cases = CourtCase::with(['witnesses'])
+            ->where('court_id', $request->court_id)
+            ->where(function ($q) use ($request) {
+                $q->where('hearing_date', $request->date)
+                  ->orWhereHas('reschedules', function ($q2) use ($request) {
+                      $q2->where('reschedule_date', $request->date);
+                  });
+            })
+            ->get();
+
+        $response = $cases->map(function ($case) {
+            // Get next reschedule (if any)
+            $nextReschedule = $case->reschedules()
+                ->where('reschedule_date', '>', $case->hearing_date)
+                ->orderBy('reschedule_date', 'asc')
+                ->first();
+
+            return [
+                'case_id' => $case->id,
+                'case_no' => $case->case_no,
+                'court_name' => $case->court ? $case->court->name_en : '',
+                'hearing_date' => $case->hearing_date,
+                'hearing_time' => $case->hearing_time,
+                'next_schedule_date' => $nextReschedule->reschedule_date ?? null,
+                'next_schedule_time' => $nextReschedule->reschedule_time ?? null,
+                'witnesses' => $case->witnesses->map(function ($w) {
+                    return [
+                        'id' => $w->id,
+                        'name' => $w->name,
+                        'phone' => $w->phone,
+                        'appeared_status' => $w->appeared_status ?? 'pending',
+                        'reschedule_date' => $w->reschedule_date ?? null,
+                        'reschedule_time' => $w->reschedule_time ?? null,
+                    ];
+                }),
+            ];
+        });
+
+        return response()->json($response);
+    }
+
+    // Update witness status (AJAX)
+    public function updateStatus(Request $request, Witness $witness)
+    {
+        $request->validate([
+            'status' => 'required|in:pending,appeared,absent,excused',
+        ]);
+
+        $witness->update(['appeared_status' => $request->status]);
+        return response()->json(['message' => 'Status updated successfully.']);
+    }
+
+    // Reschedule case & notifications
+    public function reschedule(Request $request, CourtCase $case)
+    {
+        $request->validate([
+            'reschedule_date' => 'required|date|after_or_equal:today',
+            'reschedule_time' => 'nullable',
+            'notify_options'  => 'required|array|min:1',
+        ]);
+
+        $notifyOptions = $request->notify_options;
+
+        DB::beginTransaction();
+
+        try {
+            // Create a new reschedule record
+            $reschedule = $case->reschedules()->create([
+                'reschedule_date' => $request->reschedule_date,
+                'reschedule_time' => $request->reschedule_time ?? $case->hearing_time,
+                'created_by' => auth()->id(),
+            ]);
+
+            $witnesses = $case->witnesses;
+            if ($witnesses->isEmpty()) {
+                DB::commit();
+                return response()->json(['message' => 'Case rescheduled successfully. No witnesses found.']);
+            }
+
+            $template = MessageTemplate::find(1); // default template
+
+            foreach ($notifyOptions as $option) {
+                $scheduleDate = match ($option) {
+                    '10_days_before' => Carbon::parse($reschedule->reschedule_date)->subDays(10),
+                    '3_days_before'  => Carbon::parse($reschedule->reschedule_date)->subDays(3),
+                    'send_now'       => now(),
+                    default          => now(),
+                };
+
+                if (Carbon::parse($request->reschedule_date)->lt($scheduleDate)) {
+                    DB::rollBack();
+                    return response()->json(['message' => "Reschedule date cannot be before notification ($option)."], 422);
+                }
+
+                $schedule = NotificationSchedule::create([
+                    'case_id' => $case->id,
+                    'template_id' => $template->id,
+                    'channel' => $template->channel,
+                    'status' => 'active',
+                    'schedule_date' => $scheduleDate,
+                    'created_by' => auth()->id(),
+                ]);
+
+                foreach ($witnesses as $w) {
+                    Notification::create([
+                        'schedule_id' => $schedule->id,
+                        'witness_id' => $w->id,
+                        'channel' => $template->channel,
+                        'status' => 'pending',
+                    ]);
+                }
+            }
+
+            DB::commit();
+            return response()->json(['message' => 'Case rescheduled and notifications updated successfully.']);
+        } catch (\Exception $e) {
+            DB::rollBack();
+            return response()->json(['message' => 'Error: ' . $e->getMessage()], 500);
+        }
+    }
+}
+
+
 @extends('dashboard.layouts.admin')
 @section('title', 'Court Appearance Panel')
 
@@ -40,10 +202,7 @@
                         <input type="date" name="date" id="filter_date" class="form-control" value="{{ date('Y-m-d') }}">
                     </div>
                     <div class="col-12 text-end">
-                        <button class="btn btn-success" type="submit" id="fetchBtn">
-                            <span class="spinner-border spinner-border-sm d-none" id="fetchLoader"></span>
-                            Fetch Cases
-                        </button>
+                        <button class="btn btn-success" type="submit">Fetch Cases</button>
                     </div>
                 </form>
             </div>
@@ -86,10 +245,7 @@
                 </div>
             </div>
             <div class="modal-footer">
-                <button type="submit" class="btn btn-primary" id="saveRescheduleBtn">
-                    <span class="spinner-border spinner-border-sm d-none" id="rescheduleLoader"></span>
-                    Save
-                </button>
+                <button type="submit" class="btn btn-primary">Save</button>
                 <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
             </div>
         </form>
@@ -106,8 +262,6 @@ document.addEventListener('DOMContentLoaded', function() {
     const casesContainer = document.getElementById('casesContainer');
     const filterForm = document.getElementById('filterForm');
     const token = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
-    const fetchBtn = document.getElementById('fetchBtn');
-    const fetchLoader = document.getElementById('fetchLoader');
 
     // Dependent Dropdowns
     divisionSelect?.addEventListener('change', function() {
@@ -130,9 +284,6 @@ document.addEventListener('DOMContentLoaded', function() {
     // Fetch Cases
     filterForm.addEventListener('submit', function(e) {
         e.preventDefault();
-        fetchBtn.disabled = true;
-        fetchLoader.classList.remove('d-none');
-
         const formData = new FormData(this);
         fetch('{{ route("admin.court-appearance.fetch") }}', {
             method: 'POST',
@@ -161,13 +312,13 @@ document.addEventListener('DOMContentLoaded', function() {
                                             <div class="btn-group btn-group-sm me-2" role="group">
                                                 ${['pending','appeared','absent','excused'].map(status => `
                                                     <input type="radio" class="btn-check" 
-                                                        name="status_${w.id}_${item.case_id}" 
+                                                        name="status_${w.id}" 
                                                         id="status_${w.id}_${status}" 
                                                         value="${status}" 
                                                         ${w.appeared_status === status ? 'checked' : ''}>
                                                     <label class="btn btn-outline-primary btn-sm" 
                                                         for="status_${w.id}_${status}"
-                                                        onclick="updateStatus(${w.id}, ${item.case_id}, '${status}')">
+                                                        onclick="updateStatus(${w.id}, '${status}')">
                                                         ${status.charAt(0).toUpperCase() + status.slice(1)}
                                                     </label>
                                                 `).join('')}
@@ -182,38 +333,21 @@ document.addEventListener('DOMContentLoaded', function() {
                 `;
             });
             casesContainer.innerHTML = html;
-        })
-        .finally(() => {
-            fetchBtn.disabled = false;
-            fetchLoader.classList.add('d-none');
         });
     });
 
-    // Update Status (with loader + SweetAlert)
-    window.updateStatus = function(witnessId, caseId, status) {
-        Swal.fire({
-            title: 'Confirm Update',
-            text: `Mark this witness as ${status}?`,
-            icon: 'question',
-            showCancelButton: true,
-            confirmButtonText: 'Yes, Update',
-            cancelButtonText: 'Cancel'
-        }).then((result) => {
-            if (result.isConfirmed) {
-                fetch(`{{ url('admin/court-appearance') }}/${witnessId}/update-status`, {
-                    method: 'PUT',
-                    headers: {
-                        'X-CSRF-TOKEN': token,
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify({status, case_id: caseId})
-                })
-                .then(res => res.json())
-                .then(data => Swal.fire('Success', data.message, 'success'))
-                .catch(() => Swal.fire('Error', 'Failed to update status.', 'error'));
-            }
-        });
-    };
+    // Update Status
+    window.updateStatus = function(witnessId, status) {
+        fetch(`{{ url('admin/court-appearance') }}/${witnessId}/update-status`, {
+            method: 'PUT',
+            headers: {
+                'X-CSRF-TOKEN': token,
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({status})
+        }).then(res => res.json())
+          .then(data => Swal.fire('Success', data.message, 'success'));
+    }
 
     // Reschedule Modal
     const rescheduleModalEl = document.getElementById('rescheduleModal');
@@ -222,21 +356,16 @@ document.addEventListener('DOMContentLoaded', function() {
     const rescheduleDate = document.getElementById('reschedule_date');
     const rescheduleTime = document.getElementById('reschedule_time');
     const rescheduleCaseId = document.getElementById('rescheduleCaseId');
-    const saveRescheduleBtn = document.getElementById('saveRescheduleBtn');
-    const rescheduleLoader = document.getElementById('rescheduleLoader');
 
     window.openReschedule = function(caseId) {
         rescheduleCaseId.value = caseId;
         rescheduleDate.value = '';
         rescheduleTime.value = '';
         rescheduleModal.show();
-    };
+    }
 
     rescheduleForm.addEventListener('submit', function(e){
         e.preventDefault();
-        saveRescheduleBtn.disabled = true;
-        rescheduleLoader.classList.remove('d-none');
-
         const notifyOptions = Array.from(document.querySelectorAll('input[name="notify_options[]"]:checked'))
                                    .map(el => el.value);
 
@@ -251,17 +380,11 @@ document.addEventListener('DOMContentLoaded', function() {
                 reschedule_time: rescheduleTime.value,
                 notify_options: notifyOptions
             })
-        })
-        .then(res => res.json())
-        .then(data => {
-            rescheduleModal.hide();
-            Swal.fire('Success', data.message, 'success');
-        })
-        .catch(() => Swal.fire('Error', 'Failed to reschedule.', 'error'))
-        .finally(() => {
-            saveRescheduleBtn.disabled = false;
-            rescheduleLoader.classList.add('d-none');
-        });
+        }).then(res => res.json())
+          .then(data => {
+              rescheduleModal.hide();
+              Swal.fire('Success', data.message, 'success');
+          });
     });
 });
 </script>

@@ -88,6 +88,24 @@ Schema::create('notification_schedules', function (Blueprint $table) {
             $table->timestamps();
         });
 
+Schema::create('case_reschedules', function (Blueprint $table) {
+            $table->id();
+            $table->foreignId('case_id')->constrained('cases')->cascadeOnDelete();
+            $table->date('reschedule_date');
+            $table->time('reschedule_time')->nullable();
+            $table->timestamps();
+        });
+
+Schema::create('witness_attendances', function (Blueprint $table) {
+            $table->id();
+            $table->foreignId('case_id')->constrained('cases')->cascadeOnDelete();
+            $table->foreignId('witness_id')->constrained('witnesses')->cascadeOnDelete();
+            $table->date('hearing_date');
+            $table->time('hearing_time')->nullable();
+            $table->enum('status', ['pending', 'appeared', 'absent', 'excused'])->default('pending');
+            $table->timestamps();
+        });
+
 Optional
 
 Schema::create('message_template_categories', function (Blueprint $table) {

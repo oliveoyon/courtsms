@@ -120,9 +120,10 @@
 
     <header>
         <div class="container d-flex justify-content-between align-items-center">
-            <div class="top-left-logo">
+            {{-- <div class="top-left-logo">
                 <img src="{{ asset('logo/giz-logo.gif') }}" alt="Company Logo">
-            </div>
+            </div> --}}
+            <h1>CourtSMS</h1>
         </div>
     </header>
 
@@ -132,7 +133,7 @@
         <i class="fas fa-chart-line justice-icon"></i>
 
         <h1>Welcome</h1>
-        <p>Empowering Decision-Making with a Data-Driven Approach and Real-Time Insights</p>
+        <p>SMS-Based Witness Notification System</p>
 
         @guest
             <a href="{{ route('login') }}" class="btn btn-login">Login</a>

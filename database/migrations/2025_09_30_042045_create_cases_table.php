@@ -14,6 +14,8 @@ return new class extends Migration
             $table->foreignId('court_id')->constrained()->cascadeOnDelete();
             $table->date('hearing_date');
             $table->time('hearing_time')->nullable();
+            $table->date('reschedule_date')->nullable();
+            $table->time('reschedule_time')->nullable();
             $table->text('notes')->nullable();
             $table->foreignId('created_by')->constrained('users')->cascadeOnDelete();
             $table->timestamps();

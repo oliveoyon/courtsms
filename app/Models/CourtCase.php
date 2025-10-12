@@ -20,6 +20,8 @@ class CourtCase extends Model
         'court_id',
         'hearing_date',
         'hearing_time',
+        'reschedule_date',
+        'reschedule_time',
         'notes',
         'created_by',
     ];
@@ -45,6 +47,17 @@ class CourtCase extends Model
         return $this->hasMany(NotificationSchedule::class, 'case_id');
     }
 
+    // New: Track all reschedules for this case
+    public function reschedules()
+    {
+        return $this->hasMany(CaseReschedule::class, 'case_id');
+    }
+
+    public function witnessAttendances()
+    {
+        return $this->hasMany(WitnessAttendance::class, 'case_id');
+    }
+
     // Auto-populate schedules after case creation
     protected static function booted()
     {
@@ -59,7 +72,8 @@ class CourtCase extends Model
                 NotificationSchedule::create([
                     'case_id' => $courtCase->id,
                     'template_id' => $default->template_id,
-                    'scheduled_at' => $scheduledAt,
+                    'schedule_date' => $scheduledAt->toDateString(),
+                    'schedule_time' => $scheduledAt->toTimeString(),
                     'status' => 'active',
                     'created_by' => Auth::id() ?? 1, // fallback for seeding
                 ]);

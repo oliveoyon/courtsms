@@ -27,4 +27,10 @@ class Witness extends Model
     {
         return $this->hasMany(Notification::class, 'witness_id');
     }
+
+    // New: Track multiple attendances
+    public function attendances()
+    {
+        return $this->hasMany(WitnessAttendance::class, 'witness_id');
+    }
 }
