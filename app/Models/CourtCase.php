@@ -58,6 +58,11 @@ class CourtCase extends Model
         return $this->hasMany(WitnessAttendance::class, 'case_id');
     }
 
+    public function notificationSchedules()
+    {
+        return $this->hasMany(NotificationSchedule::class, 'case_id');
+    }
+
     // Auto-populate schedules after case creation
     protected static function booted()
     {

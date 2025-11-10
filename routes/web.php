@@ -1,6 +1,6 @@
 <?php
 
-use App\Http\Controllers\Admin\CourtAppearanceController;
+use App\Http\Controllers\Admin\CaseRescheduleController;
 use App\Http\Controllers\Admin\CourtCaseController;
 use App\Http\Controllers\Admin\CourtController;
 use App\Http\Controllers\Admin\DashboardController;
@@ -10,10 +10,10 @@ use App\Http\Controllers\Admin\MessageTemplateCategoryController;
 use App\Http\Controllers\Admin\MessageTemplateController;
 use App\Http\Controllers\Admin\PermissionController;
 use App\Http\Controllers\Admin\PermissionGroupController;
+use App\Http\Controllers\Admin\RescheduleController;
 use App\Http\Controllers\Admin\RoleController;
 use App\Http\Controllers\Admin\UserController;
 use App\Http\Controllers\LanguageController;
-use App\Http\Controllers\PdfController;
 use App\Http\Controllers\ProfileController;
 use Illuminate\Support\Facades\Route;
 
@@ -64,23 +64,12 @@ Route::prefix('admin')->name('admin.')->middleware(['auth'])->group(function () 
     Route::resource('message-templates', MessageTemplateController::class);
     Route::resource('message-template-categories', MessageTemplateCategoryController::class);
 
-Route::get('court-appearance', [CourtAppearanceController::class, 'index'])->name('court-appearance.index');
-Route::post('court-appearance/fetch', [CourtAppearanceController::class, 'fetchWitnesses'])->name('court-appearance.fetch');
-Route::put('court-appearance/{witness}/update-status', [CourtAppearanceController::class, 'updateStatus'])->name('court-appearance.update-status');
-Route::put('court-appearance/reschedule/{case}', [CourtAppearanceController::class, 'reschedule'])->name('court-appearance.reschedule');
-   
+    Route::get('{case}/reschedules', [CaseRescheduleController::class, 'index'])->name('reschedules.index');
+    Route::get('{case}/reschedules/create', [CaseRescheduleController::class, 'create'])->name('reschedules.create');
+    Route::post('{case}/reschedules', [CaseRescheduleController::class, 'store'])->name('reschedules.store');
+    Route::post('reschedules/{reschedule}/attendance', [CaseRescheduleController::class, 'updateAttendance'])->name('reschedules.updateAttendance');
 
 
-// Report
-
-    // Route::get('permission-manager', [PermissionManagerController::class, 'index'])->name('permission-manager.index');
-    // Route::get('permission-manager/{group}/permissions', [PermissionManagerController::class, 'groupPermissions'])->name('permission-manager.permissions');
-    // Route::post('permission-manager/group', [PermissionManagerController::class, 'storeGroup'])->name('permission-manager.group.store');
-    // Route::put('permission-manager/group/{id}', [PermissionManagerController::class, 'updateGroup'])->name('permission-manager.group.update');
-    // Route::delete('permission-manager/group/{id}', [PermissionManagerController::class, 'destroyGroup'])->name('permission-manager.group.destroy');
-    // Route::post('permission-manager/permission', [PermissionManagerController::class, 'storePermission'])->name('permission-manager.permission.store');
-    // Route::put('permission-manager/permission/{id}', [PermissionManagerController::class, 'updatePermission'])->name('permission-manager.permission.update');
-    // Route::delete('permission-manager/permission/{id}', [PermissionManagerController::class, 'destroyPermission'])->name('permission-manager.permission.destroy');
 
 });
 

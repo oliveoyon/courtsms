@@ -2,11 +2,10 @@
 @section('title', __('case.create_case_send'))
 
 @section('content')
-<div class="app-content">
+<div class="app-content mt-3">
     <div class="container-fluid">
         <form id="caseForm">
             @csrf
-
             <!-- Case Details -->
             <div class="card card-body mb-3">
                 <h5>{{ __('case.case_details') }}</h5>
