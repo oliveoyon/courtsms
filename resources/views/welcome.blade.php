@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>CourtSMS</title>
+    <title>CourtSMS - MoLJPA</title>
     <link rel="icon" href="{{ asset('login/img/growth.png') }}" type="image/x-icon" />
     <!-- Bootstrap CSS -->
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha3/dist/css/bootstrap.min.css">
@@ -29,9 +29,17 @@
             z-index: 1000;
         }
 
-        .top-left-logo img {
-            height: 40px;
-            width: auto;
+        .header-icon {
+            font-size: 32px; /* balanced with h1 */
+            color: #800000;
+            vertical-align: middle;
+        }
+
+        header h1 {
+            font-size: 28px;
+            font-weight: bold;
+            color: #343a40;
+            margin: 0;
         }
 
         .main-wrapper {
@@ -102,6 +110,7 @@
             display: flex;
             flex-wrap: wrap;
             justify-content: center;
+            align-items: center;
         }
 
         footer .col-12 {
@@ -119,11 +128,9 @@
 <body>
 
     <header>
-        <div class="container d-flex justify-content-between align-items-center">
-            {{-- <div class="top-left-logo">
-                <img src="{{ asset('logo/giz-logo.gif') }}" alt="Company Logo">
-            </div> --}}
-            <h1>CourtSMS</h1>
+        <div class="container d-flex justify-content-center align-items-center" style="gap: 10px;">
+            <i class="fas fa-sms header-icon"></i>
+            <h1>CourtSMS - MoLJPA</h1>
         </div>
     </header>
 
@@ -143,15 +150,15 @@
     <!-- Footer -->
     <footer>
         <div class="container">
-            <div class="row text-center text-md-start">
+            <div class="row text-center text-md-start align-items-center">
                 <div class="col-12 col-md-4 mb-2 mb-md-0">
-                    <a href="{{ url('registration-information') }}" class="text-white text-decoration-none">Registration Info</a>
+                    <a href="#" class="text-white text-decoration-none">Privacy Policy</a>
                 </div>
                 <div class="col-12 col-md-4 mb-2 mb-md-0">
-                    &copy; 2025 Access to Justice for Women. All Rights Reserved.
+                    &copy; 2025 Ministry of Law, Justice and Parliamentary Affairs. All Rights Reserved.
                 </div>
                 <div class="col-12 col-md-4 mb-2 mb-md-0">
-                    <a href="{{ url('privacy-policy') }}" class="text-white text-decoration-none">Data Privacy Policy</a>
+                    <a href="#" class="text-white text-decoration-none">Technical Assistance by: Access to Justice for Women Project, GIZ Bangladesh</a>
                 </div>
             </div>
         </div>
