@@ -15,6 +15,7 @@ use App\Http\Controllers\Admin\RoleController;
 use App\Http\Controllers\Admin\UserController;
 use App\Http\Controllers\LanguageController;
 use App\Http\Controllers\ProfileController;
+use App\Http\Controllers\SmsController;
 use Illuminate\Support\Facades\Route;
 
 
@@ -70,7 +71,8 @@ Route::prefix('admin')->name('admin.')->middleware(['auth'])->group(function () 
     Route::post('reschedules/{reschedule}/attendance', [CaseRescheduleController::class, 'updateAttendance'])->name('reschedules.updateAttendance');
 
 
-
+    Route::get('/test-sms', [SmsController::class, 'testSend']);
+    Route::get('/test-otp', [SmsController::class, 'testOtp']);
 });
 
 require __DIR__ . '/auth.php';

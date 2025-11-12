@@ -56,7 +56,7 @@ class CourtCaseController extends Controller
             'court_id'         => 'required|exists:courts,id',
             'case_no'          => 'required|string|max:255',
             'hearing_date'     => 'required|date',
-            'hearing_time'     => 'required',
+            // 'hearing_time'     => 'required',
             'witnesses.*.name' => 'required|string|max:255',
             'witnesses.*.phone' => ['required', 'regex:/^01\d{9}$/'],
             'schedules'        => 'required|array|min:1',
@@ -66,7 +66,7 @@ class CourtCaseController extends Controller
 
         try {
             // Static language and template
-            $lang = 'en'; // or 'bn'
+            $lang = 'bn'; // or 'bn'
             $template = MessageTemplate::find(1); // default template ID
 
             if (!$template) {
@@ -78,7 +78,7 @@ class CourtCaseController extends Controller
                 'case_no'      => $request->case_no,
                 'court_id'     => $request->court_id,
                 'hearing_date' => $request->hearing_date,
-                'hearing_time' => $request->hearing_time,
+                'hearing_time' => $request->hearing_time ?? null,
                 'notes'        => $request->notes ?? null,
                 'created_by'   => Auth::id(),
             ]);
@@ -94,6 +94,16 @@ class CourtCaseController extends Controller
                 $witnessIds[] = $witness->id;
             }
 
+            // Helper function: Convert English digits to Bangla
+            $enToBnDigits = function ($number) {
+                $en = ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9'];
+                $bn = ['০', '১', '২', '৩', '৪', '৫', '৬', '৭', '৮', '৯'];
+                return str_replace($en, $bn, $number);
+            };
+
+            // Convert hearing date to Bangla digits
+            $hearingDateBn = $enToBnDigits($courtCase->hearing_date);
+
             // 3. Create notification schedules and notifications
             foreach ($request->schedules as $sched) {
                 $scheduleDate = match ($sched) {
@@ -106,7 +116,7 @@ class CourtCaseController extends Controller
                 $schedule = NotificationSchedule::create([
                     'case_id'      => $courtCase->id,
                     'template_id'  => $template->id,
-                    'channel'      => $template->channel, // use template channel
+                    'channel'      => $template->channel,
                     'status'       => 'active',
                     'schedule_date' => $scheduleDate,
                     'created_by'   => Auth::id(),
@@ -130,15 +140,16 @@ class CourtCaseController extends Controller
                         $smsBody = $lang === 'en' ? $template->body_en_sms : $template->body_bn_sms;
                         $whatsappBody = $lang === 'en' ? $template->body_en_whatsapp : $template->body_bn_whatsapp;
 
+                        // Replace placeholders; hearing date uses Bangla digits
                         $smsMessage = str_replace(
-                            ['{witness_name}', '{case_no}', '{hearing_date}', '{hearing_time}'],
-                            [$witness->name, $courtCase->case_no, $courtCase->hearing_date, $courtCase->hearing_time],
+                            ['{witness_name}', '{hearing_date}', '{court_name}', '{case_no}'],
+                            [$witness->name, $hearingDateBn, $courtCase->court->name, $courtCase->case_no],
                             $smsBody
                         );
 
                         $whatsappMessage = str_replace(
-                            ['{witness_name}', '{case_no}', '{hearing_date}', '{hearing_time}'],
-                            [$witness->name, $courtCase->case_no, $courtCase->hearing_date, $courtCase->hearing_time],
+                            ['{witness_name}', '{hearing_date}', '{court_name}', '{case_no}'],
+                            [$witness->name, $hearingDateBn, $courtCase->court->name, $courtCase->case_no],
                             $whatsappBody
                         );
 
@@ -147,8 +158,6 @@ class CourtCaseController extends Controller
                                 'to' => '88' . $witness->phone,
                                 'message' => $smsMessage
                             ]]);
-
-                            // dd($smsResponse);
 
                             Notification::where('schedule_id', $schedule->id)
                                 ->where('witness_id', $id)

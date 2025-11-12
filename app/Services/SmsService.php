@@ -2,82 +2,147 @@
 
 namespace App\Services;
 
+use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\Http;
+
 class SmsService
 {
-    protected string $apiUrl = "http://bulksmsbd.net/api/smsapimany";
-    protected string $balanceUrl = "http://bulksmsbd.net/api/getBalanceApi";
-    protected string $apiKey;
-    protected string $senderId;
+    protected string $tokenUrl;
+    protected string $smsUrl;
+    protected string $clientId;
+    protected string $clientSecret;
+    protected string $grantType;
 
     public function __construct()
     {
-        $this->apiKey   = env('BULKSMS_API_KEY');
-        $this->senderId = env('BULKSMS_SENDER_ID');
+        $this->tokenUrl     = env('SMS_API_URL_FOR_TOKEN');
+        $this->smsUrl       = env('SMS_API_URL_FOR_SEND');
+        $this->clientId     = env('SMS_CLIENT_ID');
+        $this->clientSecret = env('SMS_CLIENT_SECRET');
+        $this->grantType    = env('SMS_GRANT_TYPE');
     }
 
+    /**
+     * Send multiple SMS messages (one by one for new API)
+     *
+     * Expected format:
+     * [
+     *   ['to' => '8801XXXXXXXXX', 'message' => 'Text message...'],
+     *   ...
+     * ]
+     */
     public function send(array $messages): array
     {
-        $data = [
-            'api_key'  => $this->apiKey,
-            'senderid' => $this->senderId,
-            'messages' => json_encode($messages)
-        ];
+        $token = $this->getAccessToken();
 
-        $response = $this->post($this->apiUrl, $data);
+        if (!$token) {
+            return [
+                'response_code' => 401,
+                'response'      => 'Unable to get access token',
+                'messages'      => $messages
+            ];
+        }
 
-        $decoded = json_decode($response, true) ?? [];
-        $responseCode = $decoded['response_code'] ?? 0;
+        $responses = [];
+        $finalResponseCode = 200;
+
+        foreach ($messages as $msg) {
+            $payload = [
+                'msg'         => $msg['message'],
+                'destination' => $msg['to'],
+            ];
+
+            try {
+                $response = Http::withoutVerifying()
+                    ->withHeaders([
+                        'Authorization' => "Bearer {$token}",
+                        'Content-Type'  => 'application/json',
+                    ])
+                    ->post($this->smsUrl, $payload);
+
+                $decoded = $response->json() ?? [];
+
+                // Treat status 200 as success
+                $respCode = ($decoded['status'] ?? 0) === 200 ? 200 : ($decoded['responseCode'] ?? 400);
+
+                if ($respCode !== 200) {
+                    $finalResponseCode = $respCode;
+                }
+
+                $responses[] = [
+                    'message'       => $msg['message'],
+                    'to'            => $msg['to'],
+                    'response_code' => $respCode,
+                    'response'      => $decoded,
+                ];
+            } catch (\Exception $e) {
+                $finalResponseCode = 500;
+                $responses[] = [
+                    'message'       => $msg['message'],
+                    'to'            => $msg['to'],
+                    'response_code' => 500,
+                    'response'      => $e->getMessage(),
+                ];
+            }
+        }
 
         return [
-            'response_code' => $responseCode,
-            'response'      => $response,
-            'messages'      => $messages
+            'response_code' => $finalResponseCode,
+            'response'      => $responses,
+            'messages'      => $messages,
         ];
     }
 
+    /**
+     * Retrieve balance (not supported in new API)
+     */
     public function getBalance(): array
     {
-        $data = ['api_key' => $this->apiKey];
-        $response = $this->post($this->balanceUrl, $data);
-        return json_decode($response, true) ?? ['balance' => 0, 'response' => $response];
+        return [
+            'balance'  => null,
+            'response' => 'Balance check not supported in new API'
+        ];
     }
 
-    private function post(string $url, array $data): string
+    /**
+     * Get and cache access token for 50 minutes
+     */
+    private function getAccessToken(): ?string
     {
-        $ch = curl_init();
-        curl_setopt($ch, CURLOPT_URL, $url);
-        curl_setopt($ch, CURLOPT_POST, 1);
-        curl_setopt($ch, CURLOPT_POSTFIELDS, $data);
-        curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-        curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
-        $response = curl_exec($ch);
-        curl_close($ch);
-        return $response;
+        return Cache::remember('court_sms_token', now()->addMinutes(50), function () {
+            try {
+                $response = Http::withoutVerifying()
+                    ->asForm()
+                    ->post($this->tokenUrl, [
+                        'grant_type'    => $this->grantType,
+                        'client_id'     => $this->clientId,
+                        'client_secret' => $this->clientSecret,
+                    ]);
+
+                if ($response->successful()) {
+                    return $response->json()['access_token'] ?? null;
+                }
+
+                return null;
+            } catch (\Exception $e) {
+                return null;
+            }
+        });
     }
 
+    /**
+     * Map response codes for legacy usage
+     */
     public function mapResponseCode(int $code): string
     {
         $codes = [
-            202 => 'SMS Submitted Successfully',
-            1001 => 'Invalid Number',
-            1002 => 'Sender ID not correct/disabled',
-            1003 => 'Required fields missing',
-            1005 => 'Internal Error',
-            1006 => 'Balance Validity Not Available',
-            1007 => 'Balance Insufficient',
-            1011 => 'User ID not found',
-            1012 => 'Masking SMS must be sent in Bengali',
-            1013 => 'Sender ID not found by API key',
-            1014 => 'Sender Type Name not found using this sender by API key',
-            1015 => 'Sender ID has not found Any Valid Gateway by API key',
-            1016 => 'Sender Type Name Active Price Info not found by this sender id',
-            1017 => 'Sender Type Name Price Info not found by this sender id',
-            1018 => 'Account disabled',
-            1019 => 'Price of this account is disabled',
-            1020 => 'Parent account not found',
-            1021 => 'Parent active price info not found',
-            1031 => 'Account not verified',
-            1032 => 'IP not whitelisted',
+            200 => 'SMS Sent Successfully',
+            400 => 'Bad Request / Validation Failed',
+            401 => 'Unauthorized / Invalid Token',
+            403 => 'Forbidden / Access Denied',
+            404 => 'Endpoint Not Found',
+            429 => 'Rate Limit Exceeded',
+            500 => 'Internal Server Error',
         ];
 
         return $codes[$code] ?? 'Unknown Error';
