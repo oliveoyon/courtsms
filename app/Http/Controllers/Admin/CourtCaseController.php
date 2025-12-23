@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use App\Models\CourtCase;
+use App\Models\CaseHearing;
 use App\Models\Witness;
 use App\Models\NotificationSchedule;
 use App\Models\Notification;
@@ -31,16 +32,12 @@ class CourtCaseController extends Controller
     public function createAndSend()
     {
         $user = Auth::user();
-        $loggedInUser = Auth::user();
 
-        $roles = $loggedInUser->hasRole('Super Admin')
-            ? Role::all()
-            : Role::where('name', '!=', 'Super Admin')->get();
-
-        $permissionGroups = PermissionGroup::with('permissions')->get();
-
-        $divisions = $loggedInUser->district_id
-            ? Division::with(['districts' => fn($q) => $q->where('id', $loggedInUser->district_id), 'districts.courts'])->get()
+        $divisions = $user->district_id
+            ? Division::with([
+                'districts' => fn ($q) => $q->where('id', $user->district_id),
+                'districts.courts'
+            ])->get()
             : Division::with('districts.courts')->get();
 
         $templates = MessageTemplate::where('is_active', true)->get();
@@ -51,128 +48,129 @@ class CourtCaseController extends Controller
     public function storeAndSend(Request $request)
     {
         $request->validate([
-            'division_id'      => 'required|exists:divisions,id',
-            'district_id'      => 'required|exists:districts,id',
-            'court_id'         => 'required|exists:courts,id',
-            'case_no'          => 'required|string|max:255',
-            'hearing_date'     => 'required|date',
-            // 'hearing_time'     => 'required',
-            'witnesses.*.name' => 'required|string|max:255',
+            'division_id'       => 'required|exists:divisions,id',
+            'district_id'       => 'required|exists:districts,id',
+            'court_id'          => 'required|exists:courts,id',
+            'case_no'           => 'required|string|max:255',
+            'hearing_date'      => 'required|date',
+            'witnesses'         => 'required|array|min:1',
+            'witnesses.*.name'  => 'required|string|max:255',
             'witnesses.*.phone' => ['required', 'regex:/^01\d{9}$/'],
-            'schedules'        => 'required|array|min:1',
+            'schedules'         => 'required|array|min:1',
         ]);
 
         DB::beginTransaction();
 
         try {
-            // Static language and template
-            $lang = 'bn'; // or 'bn'
-            $template = MessageTemplate::find(1); // default template ID
+            $lang = 'bn';
+            $template = MessageTemplate::findOrFail(1); // default template
 
-            if (!$template) {
-                throw new \Exception("Default template not found!");
-            }
-
-            // 1. Create court case
+            /* ===============================
+             * 1️⃣ CREATE CASE
+             * =============================== */
             $courtCase = CourtCase::create([
-                'case_no'      => $request->case_no,
-                'court_id'     => $request->court_id,
-                'hearing_date' => $request->hearing_date,
-                'hearing_time' => $request->hearing_time ?? null,
-                'notes'        => $request->notes ?? null,
-                'created_by'   => Auth::id(),
+                'case_no'       => $request->case_no,
+                'court_id'      => $request->court_id,
+                'hearing_date'  => $request->hearing_date,
+                'hearing_time'  => $request->hearing_time ?? null,
+                'notes'         => $request->notes ?? null,
+                'created_by'    => Auth::id(),
             ]);
 
-            // 2. Create witnesses
-            $witnessIds = [];
+            /* ===============================
+             * 2️⃣ CREATE FIRST HEARING
+             * =============================== */
+            $hearing = CaseHearing::create([
+                'case_id'       => $courtCase->id,
+                'hearing_date'  => $request->hearing_date,
+                'hearing_time'  => $request->hearing_time ?? null,
+                'is_reschedule' => false,
+                'created_by'    => Auth::id(),
+            ]);
+
+            /* ===============================
+             * 3️⃣ CREATE WITNESSES
+             * =============================== */
+            $witnesses = [];
             foreach ($request->witnesses as $w) {
-                $witness = Witness::create([
-                    'case_id' => $courtCase->id,
-                    'name'    => $w['name'],
-                    'phone'   => $w['phone'],
+                $witnesses[] = Witness::create([
+                    'hearing_id' => $hearing->id,
+                    'name'       => $w['name'],
+                    'phone'      => $w['phone'],
                 ]);
-                $witnessIds[] = $witness->id;
             }
 
-            // Helper function: Convert English digits to Bangla
-            $enToBnDigits = function ($number) {
-                $en = ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9'];
-                $bn = ['০', '১', '২', '৩', '৪', '৫', '৬', '৭', '৮', '৯'];
-                return str_replace($en, $bn, $number);
-            };
+            /* ===============================
+             * Helper: English → Bangla digits
+             * =============================== */
+            $toBn = fn ($v) => str_replace(
+                range(0, 9),
+                ['০','১','২','৩','৪','৫','৬','৭','৮','৯'],
+                $v
+            );
 
-            // Convert hearing date to Bangla digits
-            $hearingDateBn = $enToBnDigits($courtCase->hearing_date);
+            $hearingDateBn = $toBn($request->hearing_date);
 
-            // 3. Create notification schedules and notifications
+            /* ===============================
+             * 4️⃣ SCHEDULES + NOTIFICATIONS
+             * =============================== */
             foreach ($request->schedules as $sched) {
+
                 $scheduleDate = match ($sched) {
                     '10_days_before' => Carbon::parse($request->hearing_date)->subDays(10),
                     '3_days_before'  => Carbon::parse($request->hearing_date)->subDays(3),
                     'send_now'       => now(),
-                    default          => now(),
                 };
 
                 $schedule = NotificationSchedule::create([
-                    'case_id'      => $courtCase->id,
-                    'template_id'  => $template->id,
-                    'channel'      => $template->channel,
-                    'status'       => 'active',
+                    'hearing_id'    => $hearing->id,
+                    'template_id'   => $template->id,
+                    'channel'       => $template->channel,
+                    'status'        => 'active',
                     'schedule_date' => $scheduleDate,
-                    'created_by'   => Auth::id(),
+                    'created_by'    => Auth::id(),
                 ]);
 
-                foreach ($witnessIds as $id) {
+                foreach ($witnesses as $witness) {
                     Notification::create([
                         'schedule_id' => $schedule->id,
-                        'witness_id'  => $id,
+                        'witness_id'  => $witness->id,
                         'channel'     => $template->channel,
                         'status'      => 'pending',
                     ]);
                 }
 
-                // 4. Send immediately if 'send_now'
+                /* ===============================
+                 * 5️⃣ SEND NOW
+                 * =============================== */
                 if ($sched === 'send_now') {
-                    foreach ($witnessIds as $id) {
-                        $witness = Witness::find($id);
+                    foreach ($witnesses as $witness) {
 
-                        // Determine message body based on language & channel
-                        $smsBody = $lang === 'en' ? $template->body_en_sms : $template->body_bn_sms;
-                        $whatsappBody = $lang === 'en' ? $template->body_en_whatsapp : $template->body_bn_whatsapp;
+                        $smsBody = $lang === 'bn'
+                            ? $template->body_bn_sms
+                            : $template->body_en_sms;
 
-                        // Replace placeholders; hearing date uses Bangla digits
-                        $smsMessage = str_replace(
+                        $message = str_replace(
                             ['{witness_name}', '{hearing_date}', '{court_name}', '{case_no}'],
-                            [$witness->name, $hearingDateBn, $courtCase->court->name, $courtCase->case_no],
+                            [
+                                $witness->name,
+                                $hearingDateBn,
+                                $courtCase->court->name_bn ?? $courtCase->court->name_en,
+                                $courtCase->case_no
+                            ],
                             $smsBody
                         );
 
-                        $whatsappMessage = str_replace(
-                            ['{witness_name}', '{hearing_date}', '{court_name}', '{case_no}'],
-                            [$witness->name, $hearingDateBn, $courtCase->court->name, $courtCase->case_no],
-                            $whatsappBody
-                        );
+                        // Fake success (development)
+                        $sent = true;
 
-                        if ($template->channel === 'sms' || $template->channel === 'both') {
-                            $smsResponse = $this->smsService->send([[
-                                'to' => '88' . $witness->phone,
-                                'message' => $smsMessage
-                            ]]);
-
-                            Notification::where('schedule_id', $schedule->id)
-                                ->where('witness_id', $id)
-                                ->update([
-                                    'status'   => $smsResponse['response_code'] == 202 ? 'sent' : 'failed',
-                                    'sent_at'  => $smsResponse['response_code'] == 202 ? now() : null,
-                                    'response' => $smsResponse['response']
-                                ]);
-                        }
-
-                        if ($template->channel === 'whatsapp' || $template->channel === 'both') {
-                            // WhatsApp sending logic placeholder
-                            // $whatsappResponse = $this->whatsappService->send([...]);
-                            // Notification::update([...]);
-                        }
+                        Notification::where('schedule_id', $schedule->id)
+                            ->where('witness_id', $witness->id)
+                            ->update([
+                                'status'  => $sent ? 'sent' : 'failed',
+                                'sent_at'=> $sent ? now() : null,
+                                'response'=> [],
+                            ]);
                     }
                 }
             }
@@ -183,11 +181,13 @@ class CourtCaseController extends Controller
                 'success' => true,
                 'message' => __('case.success_save'),
             ]);
+
         } catch (\Exception $e) {
             DB::rollBack();
+
             return response()->json([
                 'success' => false,
-                'message' => 'Error: ' . $e->getMessage(),
+                'message' => $e->getMessage(),
             ]);
         }
     }

@@ -165,14 +165,16 @@
                         `<option value="">${locale === 'bn' ? 'আদালত নির্বাচন করুন' : 'Select Court'}</option>`;
                     if (!divisionId) return;
 
-                    fetch('{{ url('admin/divisions') }}/' + divisionId + '/districts')
+                    // Use relative URL to avoid HTTP/HTTPS mismatch
+                    fetch(`/admin/divisions/${divisionId}/districts`)
                         .then(res => res.json())
                         .then(data => data.forEach(d => {
                             const opt = document.createElement('option');
                             opt.value = d.id;
                             opt.textContent = locale === 'bn' ? d.name_bn : d.name_en;
                             districtSelect.appendChild(opt);
-                        }));
+                        }))
+                        .catch(err => console.error('Error fetching districts:', err));
                 });
 
                 districtSelect?.addEventListener('change', function() {
@@ -181,7 +183,8 @@
                         `<option value="">${locale === 'bn' ? 'আদালত নির্বাচন করুন' : 'Select Court'}</option>`;
                     if (!districtId) return;
 
-                    fetch('{{ url('admin/districts') }}/' + districtId + '/courts')
+                    // Relative URL
+                    fetch(`/admin/districts/${districtId}/courts`)
                         .then(res => res.json())
                         .then(data => data.forEach(c => {
                             const opt = document.createElement('option');
@@ -190,8 +193,10 @@
                             opt.dataset.nameBn = c.name_bn;
                             opt.dataset.nameEn = c.name_en;
                             courtSelect.appendChild(opt);
-                        }));
+                        }))
+                        .catch(err => console.error('Error fetching courts:', err));
                 });
+
 
                 // Witness rows
                 let rowIndex = 1;

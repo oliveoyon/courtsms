@@ -12,13 +12,13 @@ class NotificationSchedule extends Model
     protected $table = 'notification_schedules';
 
     protected $fillable = [
-        'case_id',
+        'hearing_id',
         'template_id',
         'channel',
         'status',
-        'created_by',
         'schedule_date',
-        'schedule_time'
+        'schedule_time',
+        'created_by',
     ];
 
     public function case()

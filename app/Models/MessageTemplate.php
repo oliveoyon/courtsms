@@ -21,11 +21,7 @@ class MessageTemplate extends Model
         'category_id',
     ];
 
-    // Relationships
-    public function schedules()
-    {
-        return $this->hasMany(NotificationSchedule::class, 'template_id');
-    }
+    
 
     public function category()
     {

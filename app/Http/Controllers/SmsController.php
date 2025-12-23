@@ -16,7 +16,7 @@ class SmsController extends Controller
 
     public function testSend()
     {
-        $destination = '8801712105580'; // Replace with a valid number
+        $destination = '01712105580'; // Replace with a valid number
         $message = 'This is a test SMS from CourtSMS using new API';
 
         $response = $this->smsService->send([

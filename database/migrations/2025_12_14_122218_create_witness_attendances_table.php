@@ -11,11 +11,11 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('case_reschedules', function (Blueprint $table) {
+        Schema::create('witness_attendances', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('case_id')->constrained('cases')->cascadeOnDelete();
-            $table->date('reschedule_date');
-            $table->time('reschedule_time')->nullable();
+            $table->foreignId('hearing_id')->constrained('case_hearings')->cascadeOnDelete();
+            $table->foreignId('witness_id')->constrained('witnesses')->cascadeOnDelete();
+            $table->enum('status', ['pending', 'appeared', 'absent', 'excused'])->default('pending');
             $table->timestamps();
         });
     }
@@ -25,6 +25,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('case_reschedules');
+        Schema::dropIfExists('witness_attendances');
     }
 };

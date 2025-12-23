@@ -4,10 +4,6 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
-use App\Models\NotificationDefault;
-use App\Models\NotificationSchedule;
-use Illuminate\Support\Facades\Auth;
-use Carbon\Carbon;
 
 class CourtCase extends Model
 {
@@ -26,7 +22,12 @@ class CourtCase extends Model
         'created_by',
     ];
 
-    // Relationships
+    /*
+    |--------------------------------------------------------------------------
+    | Relationships
+    |--------------------------------------------------------------------------
+    */
+
     public function court()
     {
         return $this->belongsTo(Court::class);
@@ -39,50 +40,17 @@ class CourtCase extends Model
 
     public function witnesses()
     {
-        return $this->hasMany(Witness::class, 'case_id');
+        return $this->hasMany(Witness::class, 'hearing_id');
     }
 
-    public function schedules()
-    {
-        return $this->hasMany(NotificationSchedule::class, 'case_id');
-    }
-
-    // New: Track all reschedules for this case
-    public function reschedules()
-    {
-        return $this->hasMany(CaseReschedule::class, 'case_id');
-    }
-
-    public function witnessAttendances()
-    {
-        return $this->hasMany(WitnessAttendance::class, 'case_id');
-    }
 
     public function notificationSchedules()
     {
-        return $this->hasMany(NotificationSchedule::class, 'case_id');
+        return $this->hasMany(NotificationSchedule::class, 'hearing_id');
     }
 
-    // Auto-populate schedules after case creation
-    protected static function booted()
+    public function allWitnesses()
     {
-        static::created(function ($courtCase) {
-            $defaults = NotificationDefault::where('active', true)->get();
-
-            foreach ($defaults as $default) {
-                $scheduledAt = Carbon::parse($courtCase->hearing_date)
-                    ->subDays($default->days_before)
-                    ->setTime(9, 0); // Default 9 AM, adjust if needed
-
-                NotificationSchedule::create([
-                    'case_id' => $courtCase->id,
-                    'template_id' => $default->template_id,
-                    'schedule_date' => $scheduledAt->toDateString(),
-                    'schedule_time' => $scheduledAt->toTimeString(),
-                    'status' => 'active',
-                    'created_by' => Auth::id() ?? 1, // fallback for seeding
-                ]);
-            }
-        });
+        return $this->hasManyThrough(Witness::class, CaseHearing::class, 'case_id', 'hearing_id');
     }
 }
