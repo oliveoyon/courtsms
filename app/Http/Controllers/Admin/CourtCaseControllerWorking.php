@@ -27,9 +27,6 @@ class CourtCaseController extends Controller
         $this->smsService = $smsService;
     }
 
-    /**
-     * Show create + send form
-     */
     public function createAndSend()
     {
         $user = Auth::user();
@@ -46,9 +43,6 @@ class CourtCaseController extends Controller
         return view('admin.cases.create_send', compact('divisions', 'templates', 'user'));
     }
 
-    /**
-     * Store case, hearing, witnesses and send notifications
-     */
     public function storeAndSend(Request $request)
     {
         $request->validate([
@@ -97,7 +91,6 @@ class CourtCaseController extends Controller
              * =============================== */
             $witnesses = [];
             foreach ($request->witnesses as $w) {
-                // Always include hearing_id
                 $witnesses[] = Witness::create([
                     'hearing_id' => $hearing->id,
                     'name'       => $w['name'],
@@ -146,7 +139,7 @@ class CourtCaseController extends Controller
                 }
 
                 /* ===============================
-                 * 5️⃣ SEND NOW
+                 * 5️⃣ SEND NOW (REAL SMS)
                  * =============================== */
                 if ($sched === 'send_now') {
                     foreach ($witnesses as $witness) {
@@ -166,9 +159,6 @@ class CourtCaseController extends Controller
                             $smsBody
                         );
 
-                        /* =====================================================
-                         * 🔴 REAL SMS (COMMENTED — UNBLOCK LATER)
-                         * ===================================================== */
                         $smsResponse = $this->smsService->send([
                             [
                                 'to' => '88' . $witness->phone,
@@ -176,26 +166,14 @@ class CourtCaseController extends Controller
                             ]
                         ]);
 
-                        $isSent = isset($smsResponse['response_code'])
-                            && $smsResponse['response_code'] == 202;
-                        /* ===================================================== */
-
-                        /* =====================================================
-                         * 🟡 FAKE SMS SUCCESS (TEMPORARY)
-                         * ===================================================== */
-                        // $isSent = true;
-                        // $smsResponse = [
-                        //     'response_code' => 202,
-                        //     'response' => 'FAKE SMS SUCCESS (DEV MODE)'
-                        // ];
-                        /* ===================================================== */
+                        $isSent = isset($smsResponse['response_code']) && $smsResponse['response_code'] == 202;
 
                         Notification::where('schedule_id', $schedule->id)
                             ->where('witness_id', $witness->id)
                             ->update([
                                 'status'   => $isSent ? 'sent' : 'failed',
                                 'sent_at'  => $isSent ? now() : null,
-                                'response' => $smsResponse,
+                                'response' => $smsResponse['response'] ?? $smsResponse,
                             ]);
                     }
                 }

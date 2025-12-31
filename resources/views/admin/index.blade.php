@@ -76,7 +76,7 @@
         </div>
 
         <!-- Charts Row -->
-        <div class="row mt-4 g-4">
+        {{-- <div class="row mt-4 g-4">
             <div class="col-lg-8">
                 <div class="card shadow-sm">
                     <div class="card-header bg-dark text-white">
@@ -108,10 +108,10 @@
                     </div>
                 </div>
             </div>
-        </div>
+        </div> --}}
 
         <!-- Recent SMS Logs Table -->
-        <div class="row mt-4">
+        {{-- <div class="row mt-4">
             <div class="col-12">
                 <div class="card shadow-sm">
                     <div class="card-header bg-dark text-white">
@@ -149,7 +149,7 @@
                     </div>
                 </div>
             </div>
-        </div>
+        </div> --}}
 
     </div>
 </div>

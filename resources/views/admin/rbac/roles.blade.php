@@ -52,9 +52,7 @@
                             @endcan
                         </div>
                     </div>
-                    <div class="card-footer text-end text-muted small">
-                        {{ $role->created_at->diffForHumans() }}
-                    </div>
+                    
                 </div>
             </div>
             @endforeach

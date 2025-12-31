@@ -4,6 +4,7 @@ namespace App\Services;
 
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Log;
 
 class SmsService
 {
@@ -12,6 +13,7 @@ class SmsService
     protected string $clientId;
     protected string $clientSecret;
     protected string $grantType;
+    protected int $retryCount;
 
     public function __construct()
     {
@@ -19,17 +21,15 @@ class SmsService
         $this->smsUrl       = env('SMS_API_URL_FOR_SEND');
         $this->clientId     = env('SMS_CLIENT_ID');
         $this->clientSecret = env('SMS_CLIENT_SECRET');
-        $this->grantType    = env('SMS_GRANT_TYPE');
+        $this->grantType    = env('SMS_GRANT_TYPE', 'client_credentials');
+        $this->retryCount   = env('SMS_RETRY_COUNT', 2); // number of retries for failed SMS
     }
 
     /**
-     * Send multiple SMS messages (one by one for new API)
+     * Send multiple SMS messages (one by one)
      *
-     * Expected format:
-     * [
-     *   ['to' => '8801XXXXXXXXX', 'message' => 'Text message...'],
-     *   ...
-     * ]
+     * @param array $messages [['to' => '8801XXXXXXXXX', 'message' => 'Text message'], ...]
+     * @return array
      */
     public function send(array $messages): array
     {
@@ -39,7 +39,7 @@ class SmsService
             return [
                 'response_code' => 401,
                 'response'      => 'Unable to get access token',
-                'messages'      => $messages
+                'messages'      => $messages,
             ];
         }
 
@@ -47,43 +47,74 @@ class SmsService
         $finalResponseCode = 200;
 
         foreach ($messages as $msg) {
+            if (empty($msg['message']) || empty($msg['to'])) {
+                $responses[] = [
+                    'message'       => $msg['message'] ?? null,
+                    'to'            => $msg['to'] ?? null,
+                    'response_code' => 400,
+                    'response'      => 'Missing message or destination',
+                ];
+                $finalResponseCode = 400;
+                continue;
+            }
+
             $payload = [
                 'msg'         => $msg['message'],
                 'destination' => $msg['to'],
             ];
 
-            try {
-                $response = Http::withoutVerifying()
-                    ->withHeaders([
-                        'Authorization' => "Bearer {$token}",
-                        'Content-Type'  => 'application/json',
-                    ])
-                    ->post($this->smsUrl, $payload);
+            $attempt = 0;
+            $success = false;
+            $responseData = null;
 
-                $decoded = $response->json() ?? [];
+            while ($attempt <= $this->retryCount && !$success) {
+                $attempt++;
+                try {
+                    $response = Http::withoutVerifying()
+                        ->withToken($token)
+                        ->withHeaders(['Content-Type' => 'application/json'])
+                        ->post($this->smsUrl, $payload);
 
-                // Treat status 200 as success
-                $respCode = ($decoded['status'] ?? 0) === 200 ? 200 : ($decoded['responseCode'] ?? 400);
-
-                if ($respCode !== 200) {
-                    $finalResponseCode = $respCode;
+                    if ($response->successful()) {
+                        $responseData = $response->json();
+                        $success = true;
+                        $respCode = 200;
+                    } else {
+                        $responseData = $response->body();
+                        $respCode = $response->status();
+                        Log::warning('SMS send failed', [
+                            'to'            => $msg['to'],
+                            'message'       => $msg['message'],
+                            'response_code' => $respCode,
+                            'attempt'       => $attempt,
+                            'response'      => $responseData,
+                        ]);
+                        sleep(1); // wait before retry
+                    }
+                } catch (\Exception $e) {
+                    $respCode = 500;
+                    $responseData = $e->getMessage();
+                    Log::error('SMS send exception', [
+                        'to'       => $msg['to'],
+                        'message'  => $msg['message'],
+                        'attempt'  => $attempt,
+                        'exception'=> $e,
+                    ]);
+                    sleep(1); // wait before retry
                 }
-
-                $responses[] = [
-                    'message'       => $msg['message'],
-                    'to'            => $msg['to'],
-                    'response_code' => $respCode,
-                    'response'      => $decoded,
-                ];
-            } catch (\Exception $e) {
-                $finalResponseCode = 500;
-                $responses[] = [
-                    'message'       => $msg['message'],
-                    'to'            => $msg['to'],
-                    'response_code' => 500,
-                    'response'      => $e->getMessage(),
-                ];
             }
+
+            if (!$success) {
+                $finalResponseCode = max($finalResponseCode, $respCode);
+            }
+
+            $responses[] = [
+                'message'       => $msg['message'],
+                'to'            => $msg['to'],
+                'response_code' => $respCode,
+                'response'      => $responseData,
+                'attempts'      => $attempt,
+            ];
         }
 
         return [
@@ -94,18 +125,7 @@ class SmsService
     }
 
     /**
-     * Retrieve balance (not supported in new API)
-     */
-    public function getBalance(): array
-    {
-        return [
-            'balance'  => null,
-            'response' => 'Balance check not supported in new API'
-        ];
-    }
-
-    /**
-     * Get and cache access token for 50 minutes
+     * Get SMS access token and cache it using actual expiry from API
      */
     private function getAccessToken(): ?string
     {
@@ -120,14 +140,34 @@ class SmsService
                     ]);
 
                 if ($response->successful()) {
-                    return $response->json()['access_token'] ?? null;
+                    $data = $response->json();
+                    $token = $data['access_token'] ?? null;
+                    $expiresIn = $data['expires_in'] ?? 3000; // seconds
+                    if ($token) {
+                        // cache token with its actual expiry minus 1 min buffer
+                        Cache::put('court_sms_token', $token, now()->addSeconds($expiresIn - 60));
+                    }
+                    return $token;
                 }
 
+                Log::error('Failed to get SMS access token', ['response' => $response->body()]);
                 return null;
             } catch (\Exception $e) {
+                Log::error('Exception getting SMS access token', ['exception' => $e]);
                 return null;
             }
         });
+    }
+
+    /**
+     * Retrieve balance (not supported in new API)
+     */
+    public function getBalance(): array
+    {
+        return [
+            'balance'  => null,
+            'response' => 'Balance check not supported in new API',
+        ];
     }
 
     /**

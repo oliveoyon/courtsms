@@ -375,12 +375,11 @@
             </div>
         </main>
         <footer class="app-footer">
-            <div class="float-end d-none d-sm-inline">Anything you want</div>
+            <div class="float-end d-none d-sm-inline">কারিগরি সহযোগিতায়ঃ জিআইজেড বাংলাদেশ</div>
             <strong>
-                Copyright &copy; 2014-2025&nbsp;
-                <a href="https://adminlte.io" class="text-decoration-none">AdminLTE.io</a>.
+                কপিরাইট @php date('Y'); @endphp &copy;
+                <a href="https://adminlte.io" class="text-decoration-none">আইন ও বিচার বিভাগ - আইন, বিচার ও সংসদ বিষয়ক মন্ত্রণালয়</a>
             </strong>
-            All rights reserved.
         </footer>
     </div>
     <!-- JS -->

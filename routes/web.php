@@ -68,11 +68,33 @@ Route::prefix('admin')->name('admin.')->middleware(['auth'])->group(function () 
     Route::resource('message-templates', MessageTemplateController::class);
     Route::resource('message-template-categories', MessageTemplateCategoryController::class);
 
-    Route::get('hearings/manage', [HearingManagementController::class, 'index'])->name('hearings.manage');
-    Route::get('hearings/by-date', [HearingManagementController::class, 'getByDate'])->name('hearings.by_date');
-    Route::post('hearings/attendance', [HearingManagementController::class, 'updateAttendance'])->name('hearings.attendance');
-    Route::post('hearings/reschedule', [HearingManagementController::class, 'reschedule'])->name('hearings.reschedule');
+    // Route::get('hearings/manage', [HearingManagementController::class, 'index'])->name('hearings.manage');
+    // Route::get('hearings/by-date', [HearingManagementController::class, 'getByDate'])->name('hearings.by_date');
+    // Route::post('hearings/attendance', [HearingManagementController::class, 'updateAttendance'])->name('hearings.attendance');
+    // Route::post('hearings/reschedule', [HearingManagementController::class, 'reschedule'])->name('hearings.reschedule');
 
+    // Hearings index (today / filtered)
+    // Existing routes remain
+    Route::get('/hearings', [HearingManagementController::class, 'index'])
+        ->name('hearings.index');
+
+    Route::get('/hearings/{hearing}/attendance', [HearingManagementController::class, 'attendanceForm'])
+        ->name('hearings.attendance');
+
+    Route::post('/hearings/{hearing}/attendance', [HearingManagementController::class, 'storeAttendance'])
+        ->name('hearings.attendance.store');
+
+    // New routes for reschedule
+    Route::get('/hearings/{hearing}/reschedule', [HearingManagementController::class, 'rescheduleForm'])
+        ->name('hearings.reschedule');
+
+    Route::post('/hearings/{hearing}/reschedule', [HearingManagementController::class, 'storeReschedule'])
+        ->name('hearings.reschedule.store');
+
+    Route::get(
+    '/hearings/print',
+    [HearingManagementController::class, 'print']
+)->name('hearings.print');
 
 
 
@@ -83,5 +105,3 @@ Route::prefix('admin')->name('admin.')->middleware(['auth'])->group(function () 
 });
 
 require __DIR__ . '/auth.php';
-
-

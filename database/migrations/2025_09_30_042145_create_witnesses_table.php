@@ -10,11 +10,20 @@ return new class extends Migration
     {
         Schema::create('witnesses', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('case_id')->constrained('cases')->cascadeOnDelete();
+
+            // Link to hearing (not just case)
+            $table->foreignId('hearing_id')->constrained('case_hearings')->cascadeOnDelete();
+
             $table->string('name');
             $table->string('phone');
-            $table->enum('appeared_status', ['pending', 'appeared', 'absent', 'excused'])
-                  ->default('pending');
+
+            // Attendance / status for this hearing
+            $table->enum('appeared_status', ['pending', 'appeared', 'absent', 'excused'])->default('pending');
+            $table->enum('gender', ['Female', 'Male', 'Third Gender'])->nullable();
+            $table->enum('others_info', ['Under 18', 'Person with Disability'])->nullable();
+            $table->enum('sms_seen', ['yes', 'no'])->nullable();
+            $table->enum('witness_heard', ['yes', 'no'])->nullable();
+
             $table->text('remarks')->nullable();
             $table->timestamps();
         });

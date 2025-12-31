@@ -2,25 +2,17 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
 class Witness extends Model
 {
-    protected $fillable = [
-        'hearing_id',
-        'name',
-        'phone',
-        'appeared_status',
-        'remarks',
-    ];
+    use HasFactory;
 
-    public function hearing()
-    {
-        return $this->belongsTo(CaseHearing::class, 'hearing_id');
-    }
+    protected $fillable = ['case_id', 'hearing_id', 'name', 'phone', 'appeared_status', 'remarks'];
 
-    public function attendances()
+    public function case()
     {
-        return $this->hasMany(WitnessAttendance::class, 'witness_id');
+        return $this->belongsTo(CourtCase::class, 'case_id');
     }
 }
