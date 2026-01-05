@@ -1,7 +1,5 @@
 <?php
 
-use App\Http\Controllers\Admin\CaseRescheduleController;
-use App\Http\Controllers\Admin\CaseScheduleController;
 use App\Http\Controllers\Admin\CourtCaseController;
 use App\Http\Controllers\Admin\CourtController;
 use App\Http\Controllers\Admin\DashboardController;
@@ -12,7 +10,6 @@ use App\Http\Controllers\Admin\MessageTemplateCategoryController;
 use App\Http\Controllers\Admin\MessageTemplateController;
 use App\Http\Controllers\Admin\PermissionController;
 use App\Http\Controllers\Admin\PermissionGroupController;
-use App\Http\Controllers\Admin\RescheduleController;
 use App\Http\Controllers\Admin\RoleController;
 use App\Http\Controllers\Admin\UserController;
 use App\Http\Controllers\LanguageController;
@@ -91,10 +88,7 @@ Route::prefix('admin')->name('admin.')->middleware(['auth'])->group(function () 
     Route::post('/hearings/{hearing}/reschedule', [HearingManagementController::class, 'storeReschedule'])
         ->name('hearings.reschedule.store');
 
-    Route::get(
-    '/hearings/print',
-    [HearingManagementController::class, 'print']
-)->name('hearings.print');
+    Route::get('/hearings/print', [HearingManagementController::class, 'print'])->name('hearings.print');
 
 
 
@@ -102,6 +96,9 @@ Route::prefix('admin')->name('admin.')->middleware(['auth'])->group(function () 
     Route::get('/test-otp', [SmsController::class, 'testOtp']);
 
     Route::get('/debug-sms', [TestSmsDebugController::class, 'send']);
+
+
+
 });
 
 require __DIR__ . '/auth.php';

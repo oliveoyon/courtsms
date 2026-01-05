@@ -22,10 +22,19 @@ class CourtController extends Controller
     public function index()
     {
         $user = Auth::user();
-        $courts = Court::with('district')->get();
+        $courts = $user->district_id
+            ? Court::with('district')
+            ->where('district_id', $user->district_id)
+            ->where('is_active', 1)
+            ->get()
+            : Court::with('district')
+            ->where('is_active', 1)
+            ->get();
 
         $districts = $user->district_id
-            ? District::where('id', $user->district_id)->where('is_active', 1)->get()
+            ? District::where('id', $user->district_id)
+            ->where('is_active', 1)
+            ->get()
             : District::where('is_active', 1)->get();
 
 

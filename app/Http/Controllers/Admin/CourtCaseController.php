@@ -169,25 +169,25 @@ class CourtCaseController extends Controller
                         /* =====================================================
                          * 🔴 REAL SMS (COMMENTED — UNBLOCK LATER)
                          * ===================================================== */
-                        $smsResponse = $this->smsService->send([
-                            [
-                                'to' => '88' . $witness->phone,
-                                'message' => $message,
-                            ]
-                        ]);
+                        // $smsResponse = $this->smsService->send([
+                        //     [
+                        //         'to' => '88' . $witness->phone,
+                        //         'message' => $message,
+                        //     ]
+                        // ]);
 
-                        $isSent = isset($smsResponse['response_code'])
-                            && $smsResponse['response_code'] == 202;
+                        // $isSent = isset($smsResponse['response_code'])
+                        //     && $smsResponse['response_code'] == 200;
                         /* ===================================================== */
 
                         /* =====================================================
                          * 🟡 FAKE SMS SUCCESS (TEMPORARY)
                          * ===================================================== */
-                        // $isSent = true;
-                        // $smsResponse = [
-                        //     'response_code' => 202,
-                        //     'response' => 'FAKE SMS SUCCESS (DEV MODE)'
-                        // ];
+                        $isSent = true;
+                        $smsResponse = [
+                            'response_code' => 200,
+                            'response' => 'FAKE SMS SUCCESS (DEV MODE)'
+                        ];
                         /* ===================================================== */
 
                         Notification::where('schedule_id', $schedule->id)
