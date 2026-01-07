@@ -72,23 +72,27 @@ Route::prefix('admin')->name('admin.')->middleware(['auth'])->group(function () 
 
     // Hearings index (today / filtered)
     // Existing routes remain
-    Route::get('/hearings', [HearingManagementController::class, 'index'])
+    // Index can be GET/POST for filters
+    Route::match(['get', 'post'], '/hearings', [HearingManagementController::class, 'index'])
         ->name('hearings.index');
 
-    Route::get('/hearings/{hearing}/attendance', [HearingManagementController::class, 'attendanceForm'])
-        ->name('hearings.attendance');
+    // Attendance / Reschedule start - POST only
+    Route::post('/hearings/{hearing}/attendance/start', [HearingManagementController::class, 'attendanceForm'])
+        ->name('hearings.attendance.start');
 
+    Route::post('/hearings/{hearing}/reschedule/start', [HearingManagementController::class, 'rescheduleForm'])
+        ->name('hearings.reschedule.start');
+
+    // Storing attendance / reschedule - POST
     Route::post('/hearings/{hearing}/attendance', [HearingManagementController::class, 'storeAttendance'])
         ->name('hearings.attendance.store');
-
-    // New routes for reschedule
-    Route::get('/hearings/{hearing}/reschedule', [HearingManagementController::class, 'rescheduleForm'])
-        ->name('hearings.reschedule');
 
     Route::post('/hearings/{hearing}/reschedule', [HearingManagementController::class, 'storeReschedule'])
         ->name('hearings.reschedule.store');
 
-    Route::get('/hearings/print', [HearingManagementController::class, 'print'])->name('hearings.print');
+    // Printing filtered list
+    Route::post('/hearings/print', [HearingManagementController::class, 'print'])
+        ->name('hearings.print');
 
 
 
@@ -96,9 +100,6 @@ Route::prefix('admin')->name('admin.')->middleware(['auth'])->group(function () 
     Route::get('/test-otp', [SmsController::class, 'testOtp']);
 
     Route::get('/debug-sms', [TestSmsDebugController::class, 'send']);
-
-
-
 });
 
 require __DIR__ . '/auth.php';

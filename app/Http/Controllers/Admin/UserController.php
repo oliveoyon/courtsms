@@ -141,8 +141,10 @@ class UserController extends Controller
         }
 
         // District restriction
-        if (!$loggedInUser->hasRole('Super Admin') && $loggedInUser->district_id 
-            && $user->district_id !== $loggedInUser->district_id) {
+        if (
+            !$loggedInUser->hasRole('Super Admin') && $loggedInUser->district_id
+            && $user->district_id !== $loggedInUser->district_id
+        ) {
             abort(403, 'Unauthorized to edit users from other districts.');
         }
 
@@ -152,9 +154,16 @@ class UserController extends Controller
 
         $permissionGroups = PermissionGroup::with('permissions')->get();
 
-        // District assignment logic
+        // District assignment logic (fixed)
         if ($loggedInUser->district_id) {
-            $divisions = Division::with(['districts' => fn($q) => $q->where('id', $loggedInUser->district_id), 'districts.courts'])->get();
+            $divisions = Division::whereHas('districts', function ($q) use ($loggedInUser) {
+                $q->where('id', $loggedInUser->district_id);
+            })
+                ->with([
+                    'districts' => fn($q) => $q->where('id', $loggedInUser->district_id),
+                    'districts.courts'
+                ])
+                ->get();
         } else {
             $divisions = Division::with('districts.courts')->get();
         }
@@ -185,8 +194,10 @@ class UserController extends Controller
         }
 
         // District restriction
-        if (!$loggedInUser->hasRole('Super Admin') && $loggedInUser->district_id 
-            && $user->district_id !== $loggedInUser->district_id) {
+        if (
+            !$loggedInUser->hasRole('Super Admin') && $loggedInUser->district_id
+            && $user->district_id !== $loggedInUser->district_id
+        ) {
             abort(403, 'Unauthorized to update users from other districts.');
         }
 
@@ -206,6 +217,17 @@ class UserController extends Controller
             'roles' => 'array',
             'permissions' => 'array',
         ]);
+
+        // Hierarchy validation (fixed)
+        if ($request->district_id && !\App\Models\District::where('id', $request->district_id)
+            ->where('division_id', $request->division_id)->exists()) {
+            abort(422, 'Invalid district for the selected division.');
+        }
+
+        if ($request->court_id && !\App\Models\Court::where('id', $request->court_id)
+            ->where('district_id', $request->district_id)->exists()) {
+            abort(422, 'Invalid court for the selected district.');
+        }
 
         $user->update([
             'name' => $request->name,
@@ -230,6 +252,7 @@ class UserController extends Controller
         return redirect()->route('admin.users.index')->with('success', 'User updated successfully.');
     }
 
+
     public function destroy(User $user, Request $request)
     {
         $loggedInUser = Auth::user();
@@ -240,8 +263,10 @@ class UserController extends Controller
         }
 
         // District restriction
-        if (!$loggedInUser->hasRole('Super Admin') && $loggedInUser->district_id 
-            && $user->district_id !== $loggedInUser->district_id) {
+        if (
+            !$loggedInUser->hasRole('Super Admin') && $loggedInUser->district_id
+            && $user->district_id !== $loggedInUser->district_id
+        ) {
             abort(403, 'Unauthorized to delete users from other districts.');
         }
 
