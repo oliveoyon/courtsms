@@ -53,4 +53,9 @@ class CourtCase extends Model
     {
         return $this->hasManyThrough(Witness::class, CaseHearing::class, 'case_id', 'hearing_id');
     }
+
+    public function hearings()
+    {
+        return $this->hasMany(\App\Models\CaseHearing::class, 'case_id');
+    }
 }

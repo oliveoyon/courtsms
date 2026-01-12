@@ -3,66 +3,99 @@
 namespace App\Jobs;
 
 use App\Models\Notification;
-use App\Services\ScheduledSmsService;
+use App\Services\SmsService;
+use Carbon\Carbon;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
 use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Queue\SerializesModels;
-use Carbon\Carbon;
+use Illuminate\Support\Facades\Log;
 
 class SendSmsJob implements ShouldQueue
 {
     use Dispatchable, InteractsWithQueue, Queueable, SerializesModels;
 
-    protected Notification $notification;
-    protected ScheduledSmsService $smsService;
+    public function __construct(public Notification $notification) {}
 
-    // Allowed sending hours (configurable)
-    protected int $startHour = 8;
-    protected int $endHour = 20;
-
-    public function __construct(Notification $notification)
+    public function handle(): void
     {
-        $this->notification = $notification;
-        $this->smsService = new ScheduledSmsService();
-    }
+        $notification = $this->notification->fresh([
+            'witness',
+            'schedule.hearing.case.court',
+            'schedule.template'
+        ]);
 
-    public function handle()
-    {
-        $now = Carbon::now();
+        $witness  = $notification->witness;
+        $schedule = $notification->schedule;
+        $hearing  = $schedule?->hearing;
+        $case     = $hearing?->case;
+        $court    = $case?->court;
+        $template = $schedule?->template;
 
-        // ⚠ Only send in allowed hours
-        if ($now->hour < $this->startHour || $now->hour >= $this->endHour) {
-            $nextSend = Carbon::today()->addHours($this->startHour);
-            if ($now->hour >= $this->endHour) $nextSend->addDay();
-
-            self::dispatch($this->notification)->delay($nextSend->diffInSeconds($now));
+        /** 🔴 Hard validation */
+        if (!$witness || !$schedule || !$hearing || !$case || !$court || !$template) {
+            Log::error('SMS aborted – missing relation', [
+                'notification_id' => $notification->id,
+                'has_witness'  => (bool) $witness,
+                'has_schedule' => (bool) $schedule,
+                'has_hearing'  => (bool) $hearing,
+                'has_case'     => (bool) $case,
+                'has_court'    => (bool) $court,
+                'has_template' => (bool) $template,
+            ]);
             return;
         }
 
-        // Render SMS template
-        $template = $this->notification->schedule->template;
-        $message = $template->body_en_sms ?? '';
+        /** 🕒 Safe hearing date handling */
+        try {
+            $hearingDate = Carbon::parse($hearing->hearing_date)->format('d M Y');
+        } catch (\Throwable $e) {
+            Log::error('Invalid hearing_date', [
+                'notification_id' => $notification->id,
+                'value' => $hearing->hearing_date,
+            ]);
+            return;
+        }
+
+        /** 🧾 Prepare SMS body */
         $message = str_replace(
             ['{witness_name}', '{hearing_date}', '{court_name}', '{case_no}'],
             [
-                $this->notification->witness->name,
-                $this->notification->witness->hearing->hearing_date,
-                $this->notification->witness->hearing->case->court->name,
-                $this->notification->witness->hearing->case->case_no
+                $witness->name,
+                $hearingDate,
+                $court->name_bn ?? $court->name_en ?? $court->name,
+                $case->case_no,
             ],
-            $message
+            $template->body_bn_sms
         );
 
-        // Send SMS
-        $smsResult = $this->smsService->sendSms('88'.$this->notification->witness->phone, $message);
+        Log::info('Sending SMS', [
+            'notification_id' => $notification->id,
+            'to' => $witness->phone,
+            'message' => $message,
+        ]);
 
-        // Update notification status
-        $this->notification->status = $smsResult['success'] ? 'sent' : 'failed';
-        $this->notification->sent_at = $smsResult['success'] ? now() : null;
-        $this->notification->response = $smsResult['response'];
-        $this->notification->attempts = $smsResult['attempts'];
-        $this->notification->save();
+        /** 🚀 Send SMS – prepend 88 for international format */
+        $sms = app(SmsService::class)->send([
+            [
+                'to' => '88' . $witness->phone,
+                'message' => $message,
+            ]
+        ]);
+
+        $response = $sms['response'][0] ?? [];
+        $success = ($response['response_code'] ?? null) === 200;
+
+        $notification->update([
+            'status'   => $success ? 'sent' : 'failed',
+            'sent_at'  => $success ? now() : null,
+            'response' => $response,
+        ]);
+
+        Log::info('SMS processed', [
+            'notification_id' => $notification->id,
+            'status' => $notification->status,
+        ]);
     }
 }

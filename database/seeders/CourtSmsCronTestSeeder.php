@@ -31,7 +31,8 @@ class CourtSmsCronTestSeeder extends Seeder
             $template       = MessageTemplate::findOrFail(1);
 
             // TODAY = 6 JAN, HEARING = 16 JAN
-            $hearingDate = Carbon::create(2026, 1, 16);
+            // 
+            $hearingDate = Carbon::today();
 
             /* ===============================
              * FAKE DATA

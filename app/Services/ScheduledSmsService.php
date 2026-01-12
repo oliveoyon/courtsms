@@ -7,88 +7,70 @@ use Illuminate\Support\Facades\Log;
 
 class ScheduledSmsService
 {
-    // ======= CONFIGURABLE STATIC VARIABLES =======
-    protected string $apiUrl = 'https://api-k8s.oss.net.bd/api/broker-service/sms/send_sms';
-    protected string $clientId = 'Court SMS';
-    protected string $clientSecret = '1QYOAC0OKqbcNrM1e2e6b1w0Lo8MOjUb';
-    protected int $maxRetries = 5; // more retries for production
-    protected int $retryDelaySeconds = 2; // exponential backoff can be added
-    protected bool $devMode = true; // true = fake SMS, false = real
-    // ============================================
+    protected string $apiUrl;
+    protected bool $devMode;
+    protected int $maxRetries;
+    protected int $retryDelay;
 
-    /**
-     * Send a single SMS
-     */
+    public function __construct()
+    {
+        $this->apiUrl = config('sms.api_url_send');
+
+        if (!$this->apiUrl) {
+            throw new \Exception('SMS API URL not configured');
+        }
+
+        $this->devMode = config('sms.dev_mode', true);
+        $this->maxRetries = config('sms.max_retries', 3);
+        $this->retryDelay = config('sms.retry_delay', 2);
+    }
+
     public function sendSms(string $to, string $message): array
     {
         $attempt = 0;
-        $success = false;
-        $responseData = null;
 
-        while ($attempt < $this->maxRetries && !$success) {
+        while ($attempt < $this->maxRetries) {
             $attempt++;
 
             try {
                 if ($this->devMode) {
-                    // FAKE SMS SUCCESS
-                    $responseData = [
-                        'response_code' => 200,
+                    return [
+                        'success' => true,
                         'response' => [
-                            'response_code' => 200,
-                            'success' => true,
-                            'message' => $message,
+                            'dev_mode' => true,
                             'to' => $to,
-                            'attempts' => $attempt,
-                            'provider' => 'mnet',
-                            'masking' => 'Court SMS',
-                        ]
+                            'message' => $message,
+                        ],
+                        'attempts' => $attempt,
                     ];
-                    $success = true;
-                    break;
                 }
 
-                // REAL SMS
-                $payload = [
+                $response = Http::post($this->apiUrl, [
                     'msg' => $message,
                     'destination' => $to,
-                ];
+                ]);
 
-                $response = Http::withoutVerifying()
-                    ->withHeaders(['Content-Type' => 'application/json'])
-                    ->post($this->apiUrl, $payload);
-
-                $responseData = $response->json();
-
-                if (
-                    $response->successful() &&
-                    isset($responseData['response'][0]['success']) &&
-                    $responseData['response'][0]['success'] === true
-                ) {
-                    $success = true;
-                    break;
+                if ($response->successful()) {
+                    return [
+                        'success' => true,
+                        'response' => $response->json(),
+                        'attempts' => $attempt,
+                    ];
                 }
 
-                $responseData['success'] = false;
-                sleep($this->retryDelaySeconds);
-
-            } catch (\Exception $e) {
-                $responseData = [
-                    'success' => false,
-                    'error' => $e->getMessage()
-                ];
-                sleep($this->retryDelaySeconds);
-                Log::error('SMS Send Exception', [
-                    'to' => $to,
-                    'message' => $message,
+            } catch (\Throwable $e) {
+                Log::error('SMS send error', [
                     'attempt' => $attempt,
-                    'exception' => $e->getMessage()
+                    'error' => $e->getMessage(),
                 ]);
             }
+
+            sleep($this->retryDelay);
         }
 
         return [
-            'success' => $success,
-            'response' => $responseData,
+            'success' => false,
+            'response' => 'SMS failed after retries',
             'attempts' => $attempt,
         ];
     }

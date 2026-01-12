@@ -75,6 +75,16 @@ class SmsService
                         ->withHeaders(['Content-Type' => 'application/json'])
                         ->post($this->smsUrl, $payload);
 
+                    // ✅ Auto-refresh token if 401
+                    if ($response->status() === 401) {
+                        Cache::forget('court_sms_token');           // remove old token
+                        $token = $this->getAccessToken();          // get a new token
+                        $response = Http::withoutVerifying()
+                            ->withToken($token)
+                            ->withHeaders(['Content-Type' => 'application/json'])
+                            ->post($this->smsUrl, $payload);
+                    }
+
                     if ($response->successful()) {
                         $responseData = $response->json();
                         $success = true;

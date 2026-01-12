@@ -5,26 +5,42 @@ namespace App\Console\Commands;
 use Illuminate\Console\Command;
 use App\Models\Notification;
 use App\Jobs\SendSmsJob;
-use Carbon\Carbon;
 
 class SendScheduledSms extends Command
 {
     protected $signature = 'sms:send-scheduled';
-    protected $description = 'Send pending scheduled SMS notifications in batch';
+    protected $description = 'Send scheduled SMS to witnesses';
+
+    protected int $batchSize = 100; // Adjust per server
 
     public function handle()
     {
-        $now = Carbon::now();
+        $this->info('Starting SMS dispatch: ' . now());
 
-        // Fetch pending notifications in chunks to reduce memory usage
-        Notification::where('status', 'pending')
-            ->whereHas('schedule', fn($q) => $q->where('schedule_date', '<=', $now))
-            ->with(['witness', 'schedule.template'])
-            ->chunkById(200, function ($notifications) {
-                foreach ($notifications as $notification) {
-                    SendSmsJob::dispatch($notification);
-                }
-                $this->info(count($notifications).' notifications dispatched.');
-            });
+        $notifications = Notification::with('witness', 'schedule.case.court', 'schedule.template')
+            ->where('status', 'pending')
+            ->whereHas('schedule', function ($q) {
+                $q->where('status', 'active')
+                  ->where('schedule_date', '<=', now());
+            })
+            ->orderBy('id')
+            ->get();
+
+        $total = $notifications->count();
+        $this->info("Total pending notifications: {$total}");
+
+        if ($total === 0) {
+            $this->info("No notifications to send now.");
+            return 0;
+        }
+
+        $notifications->chunk($this->batchSize)->each(function ($batch) {
+            foreach ($batch as $notification) {
+                SendSmsJob::dispatch($notification)->onQueue('sms');
+            }
+        });
+
+        $this->info('Dispatching jobs finished.');
+        return 0;
     }
 }

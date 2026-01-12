@@ -38,4 +38,14 @@ class CaseHearing extends Model
     {
         return $this->witnessAttendances()->where('witness_id', $witness->id)->first();
     }
+
+    public function court()
+    {
+        return $this->belongsTo(Court::class, 'court_id');
+    }
+
+    public function notifications()
+    {
+        return $this->hasMany(NotificationSchedule::class, 'hearing_id');
+    }
 }

@@ -33,6 +33,11 @@ class NotificationSchedule extends Model
 
     public function template()
     {
-        return $this->belongsTo(\App\Models\MessageTemplate::class, 'template_id');
+        return $this->belongsTo(MessageTemplate::class, 'template_id');
+    }
+
+    public function hearing()
+    {
+        return $this->belongsTo(CaseHearing::class, 'hearing_id');
     }
 }
