@@ -58,4 +58,9 @@ class CourtCase extends Model
     {
         return $this->hasMany(\App\Models\CaseHearing::class, 'case_id');
     }
+
+    public function schedules()
+    {
+        return $this->hasMany(NotificationSchedule::class, 'case_id');
+    }
 }

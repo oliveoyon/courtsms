@@ -1,7 +1,9 @@
 <?php
 
+use App\Http\Controllers\Admin\AnalyticsController;
 use App\Http\Controllers\Admin\CourtCaseController;
 use App\Http\Controllers\Admin\CourtController;
+use App\Http\Controllers\Admin\CourtSmsReportController;
 use App\Http\Controllers\Admin\DashboardController;
 use App\Http\Controllers\Admin\DistrictController;
 use App\Http\Controllers\Admin\DivisionController;
@@ -26,15 +28,6 @@ Route::get('/', function () {
 Route::get('language/{locale}', [LanguageController::class, 'setLocale'])->name('locale.set');
 
 
-
-
-
-
-// routes/web.php
-
-// Route::get('/dashboard', function () {
-//     return view('dashboard');
-// })->middleware(['auth', 'verified'])->name('dashboard');
 
 Route::middleware('auth')->group(function () {
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
@@ -65,14 +58,7 @@ Route::prefix('admin')->name('admin.')->middleware(['auth'])->group(function () 
     Route::resource('message-templates', MessageTemplateController::class);
     Route::resource('message-template-categories', MessageTemplateCategoryController::class);
 
-    // Route::get('hearings/manage', [HearingManagementController::class, 'index'])->name('hearings.manage');
-    // Route::get('hearings/by-date', [HearingManagementController::class, 'getByDate'])->name('hearings.by_date');
-    // Route::post('hearings/attendance', [HearingManagementController::class, 'updateAttendance'])->name('hearings.attendance');
-    // Route::post('hearings/reschedule', [HearingManagementController::class, 'reschedule'])->name('hearings.reschedule');
-
-    // Hearings index (today / filtered)
-    // Existing routes remain
-    // Index can be GET/POST for filters
+    
     Route::match(['get', 'post'], '/hearings', [HearingManagementController::class, 'index'])
         ->name('hearings.index');
 
@@ -100,6 +86,20 @@ Route::prefix('admin')->name('admin.')->middleware(['auth'])->group(function () 
     Route::get('/test-otp', [SmsController::class, 'testOtp']);
 
     Route::get('/debug-sms', [TestSmsDebugController::class, 'send']);
+
+
+    // dd(class_exists(\App\Http\Controllers\Admin\AnalyticsController::class));
+
+    Route::get('analytics/overview', [AnalyticsController::class, 'overview'])
+            ->name('analytics.overview');
+    
+            Route::get('analytics/sms-summary', [AnalyticsController::class, 'smsSummary'])
+    ->name('analytics.sms.summary');
+
+    
+    Route::get('reports/court-sms-dashboard', [CourtSmsReportController::class, 'index'])->name('reports.court_sms_dashboard');
+    Route::get('reports/court-sms-dashboard/data', [CourtSmsReportController::class, 'getMetrics'])->name('reports.court_sms_dashboard.data');
+    
 });
 
 require __DIR__ . '/auth.php';

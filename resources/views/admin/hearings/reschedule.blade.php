@@ -1,5 +1,5 @@
 @extends('dashboard.layouts.admin')
-@section('title', 'Reschedule Hearing')
+@section('title', __('case.reschedule'))
 
 @section('content')
 <div class="app-content mt-3">
@@ -12,16 +12,16 @@
 
             {{-- Case Details --}}
             <div class="card card-body mb-3">
-                <h5>Case Details</h5>
+                <h5>{{ __('case.case_details') }}</h5>
                 <div class="row g-3 mt-3">
                     <div class="col-md-4">
-                        <label>Case No</label>
+                        <label>{{ __('case.case_no') }}</label>
                         <input type="text" class="form-control form-control-sm"
                                value="{{ $hearing->case->case_no }}" disabled>
                     </div>
 
                     <div class="col-md-4">
-                        <label>New Hearing Date</label>
+                        <label>{{ __('case.hearing_date') }}</label>
                         <input type="date" name="new_date"
                                class="form-control form-control-sm"
                                value="{{ old('new_date', $hearing->hearing_date) }}"
@@ -29,7 +29,7 @@
                     </div>
 
                     <div class="col-md-4">
-                        <label>New Hearing Time</label>
+                        <label>{{ __('case.hearing_time') }}</label>
                         <input type="time" name="new_time"
                                class="form-control form-control-sm"
                                value="{{ old('new_time', $hearing->hearing_time) }}">
@@ -39,13 +39,13 @@
 
             {{-- Witnesses --}}
             <div class="card card-body mb-3">
-                <h5>Witnesses</h5>
+                <h5>{{ __('case.witnesses') }}</h5>
 
                 <table class="table table-bordered table-sm" id="witnessTable">
                     <thead>
                         <tr>
-                            <th>Name</th>
-                            <th>Phone</th>
+                            <th>{{ __('case.name') }}</th>
+                            <th>{{ __('case.phone') }}</th>
                             <th>
                                 <button type="button" id="addRow"
                                         class="btn btn-success btn-sm">
@@ -83,29 +83,29 @@
 
             {{-- Schedule --}}
             <div class="card card-body mb-3">
-                <h5>Schedule</h5>
+                <h5>{{ __('case.schedule') }}</h5>
                 <div class="btn-group" role="group">
                     <input type="checkbox" class="btn-check" name="schedules[]" id="sched10" value="10_days_before">
-                    <label class="btn btn-outline-success btn-sm" for="sched10">10 days before</label>
+                    <label class="btn btn-outline-success btn-sm" for="sched10">{{ __('case.10_days_before') }}</label>
 
                     <input type="checkbox" class="btn-check" name="schedules[]" id="sched3" value="3_days_before">
-                    <label class="btn btn-outline-success btn-sm" for="sched3">3 days before</label>
+                    <label class="btn btn-outline-success btn-sm" for="sched3">{{ __('case.3_days_before') }}</label>
 
                     <input type="checkbox" class="btn-check" name="schedules[]" id="schedNow" value="send_now">
-                    <label class="btn btn-outline-success btn-sm" for="schedNow">Send Now</label>
+                    <label class="btn btn-outline-success btn-sm" for="schedNow">{{ __('case.send_now') }}</label>
                 </div>
             </div>
 
             {{-- Preview --}}
             <div class="card card-body mb-3">
-                <h5>Preview Message</h5>
+                <h5>{{ __('case.preview_message') }}</h5>
                 <div id="previewMessage" class="border p-2 bg-light">
-                    Enter details to see preview.
+                    {{ __('case.enter_preview') }}
                 </div>
             </div>
 
             <button type="submit" class="btn btn-primary btn-sm">
-                Save Reschedule
+                {{ __('case.reschedule') }}
             </button>
         </form>
 
@@ -170,13 +170,13 @@ document.addEventListener('DOMContentLoaded', function () {
 
         document.querySelectorAll('.witnessName').forEach((i, idx) => {
             if (i.value.trim()) {
-                html += `<strong>Witness ${idx+1}:</strong>
-                         ${i.value} | Hearing Date: ${toBanglaDate(date)}<br>`;
+                html += `<strong>{{ __('case.witnesses') }} ${idx+1}:</strong>
+                         ${i.value} | {{ __('case.hearing_date') }}: ${toBanglaDate(date)}<br>`;
             }
         });
 
         document.getElementById('previewMessage').innerHTML =
-            html || 'Enter details to see preview.';
+            html || '{{ __('case.enter_preview') }}';
     }
 
     attachListeners();
@@ -189,7 +189,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
         // Frontend validation
         if (!document.querySelector('input[name="schedules[]"]:checked')) {
-            Swal.fire('Schedule required', 'Select at least one schedule', 'warning');
+            Swal.fire('{{ __('case.schedule') }} প্রয়োজন', '{{ __('case.select') }}', 'warning');
             return;
         }
 
@@ -211,9 +211,9 @@ document.addEventListener('DOMContentLoaded', function () {
         .then(data => {
             Swal.fire({
                 icon: 'success',
-                title: 'Success',
+                title: '{{ __('case.success_save') }}',
                 text: data.message,
-                confirmButtonText: 'OK',
+                confirmButtonText: '{{ __('case.submit_send') }}',
                 allowOutsideClick: false
             }).then(() => {
                 window.location.href = "{{ route('admin.hearings.index') }}";
@@ -222,8 +222,8 @@ document.addEventListener('DOMContentLoaded', function () {
         .catch(err => {
             Swal.fire({
                 icon: 'error',
-                title: 'Reschedule Failed',
-                text: err.message ?? 'Something went wrong'
+                title: '{{ __('case.reschedule') }} ব্যর্থ',
+                text: err.message ?? '{{ __('case.notes') }}'
             });
             isSubmitting = false;
         });

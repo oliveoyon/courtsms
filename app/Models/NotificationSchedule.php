@@ -40,4 +40,9 @@ class NotificationSchedule extends Model
     {
         return $this->belongsTo(CaseHearing::class, 'hearing_id');
     }
+
+    public function courtCase()
+    {
+        return $this->belongsTo(CourtCase::class, 'case_id');
+    }
 }

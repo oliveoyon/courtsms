@@ -48,4 +48,16 @@ class CaseHearing extends Model
     {
         return $this->hasMany(NotificationSchedule::class, 'hearing_id');
     }
+
+    public function notificationsViaSchedule()
+    {
+        return $this->hasManyThrough(
+            \App\Models\Notification::class,
+            \App\Models\NotificationSchedule::class,
+            'hearing_id',   // NotificationSchedule FK
+            'schedule_id',  // Notification FK
+            'id',           // CaseHearing PK
+            'id'            // NotificationSchedule PK
+        );
+    }
 }

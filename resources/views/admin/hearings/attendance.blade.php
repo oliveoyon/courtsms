@@ -1,6 +1,6 @@
 @extends('dashboard.layouts.admin')
 
-@section('title', 'Take Attendance')
+@section('title', __('case.take_attendance'))
 
 @section('content')
     <div class="container-fluid">
@@ -8,8 +8,8 @@
         <div class="card">
             <div class="card-header">
                 <strong>
-                    Case No: {{ $hearing->case->case_no }} |
-                    Hearing Date: {{ $hearing->hearing_date }}
+                    {{ __('case.case_no') }}: {{ $hearing->case->case_no }} |
+                    {{ __('case.hearing_date') }}: {{ $hearing->hearing_date }}
                 </strong>
             </div>
 
@@ -20,14 +20,14 @@
                     <table class="table table-bordered table-striped align-middle">
                         <thead class="table-light">
                             <tr>
-                                <th>Witness Name</th>
-                                <th>Phone</th>
-                                <th>Attendance</th>
-                                <th>Gender</th>
-                                <th>Others Info</th>
-                                <th class="text-center">SMS Seen</th>
-                                <th class="text-center">Witness Heard</th>
-                                <th>Remarks</th>
+                                <th>{{ __('case.witness_name') }}</th>
+                                <th>{{ __('case.phone') }}</th>
+                                <th>{{ __('case.attendance') }}</th>
+                                <th>{{ __('case.gender') }}</th>
+                                <th>{{ __('case.others_info') }}</th>
+                                <th class="text-center">{{ __('case.sms_seen') }}</th>
+                                <th class="text-center">{{ __('case.witness_heard') }}</th>
+                                <th>{{ __('case.remarks') }}</th>
                             </tr>
                         </thead>
 
@@ -45,19 +45,19 @@
                                         <select name="attendance[{{ $witness->id }}]" class="form-select form-select-sm">
                                             <option value="appeared"
                                                 {{ $witness->appeared_status === 'appeared' ? 'selected' : '' }}>
-                                                Present
+                                                {{ __('case.appeared') }}
                                             </option>
                                             <option value="absent"
                                                 {{ $witness->appeared_status === 'absent' ? 'selected' : '' }}>
-                                                Absent
+                                                {{ __('case.not_appeared') }}
                                             </option>
                                             <option value="excused"
                                                 {{ $witness->appeared_status === 'excused' ? 'selected' : '' }}>
-                                                Excused
+                                                {{ __('case.excused') }}
                                             </option>
                                             <option value="pending"
                                                 {{ $witness->appeared_status === 'pending' ? 'selected' : '' }}>
-                                                Pending
+                                                {{ __('case.pending') }}
                                             </option>
                                         </select>
                                     </td>
@@ -65,14 +65,16 @@
                                     {{-- Gender --}}
                                     <td>
                                         <select name="gender[{{ $witness->id }}]" class="form-select form-select-sm">
-                                            <option value="">-- Select --</option>
+                                            <option value="">-- {{ __('case.select') }} --</option>
                                             <option value="Female" {{ $witness->gender === 'Female' ? 'selected' : '' }}>
-                                                Female</option>
-                                            <option value="Male" {{ $witness->gender === 'Male' ? 'selected' : '' }}>Male
+                                                {{ __('case.female') }}
+                                            </option>
+                                            <option value="Male" {{ $witness->gender === 'Male' ? 'selected' : '' }}>
+                                                {{ __('case.male') }}
                                             </option>
                                             <option value="Third Gender"
                                                 {{ $witness->gender === 'Third Gender' ? 'selected' : '' }}>
-                                                Third Gender
+                                                {{ __('case.third_gender') }}
                                             </option>
                                         </select>
                                     </td>
@@ -80,17 +82,18 @@
                                     {{-- Others Info --}}
                                     <td>
                                         <select name="others_info[{{ $witness->id }}]" class="form-select form-select-sm">
-                                            <option value="">-- None --</option>
+                                            <option value="">-- {{ __('case.none') }} --</option>
                                             <option value="Under 18"
                                                 {{ $witness->others_info === 'Under 18' ? 'selected' : '' }}>
-                                                Under 18
+                                                {{ __('case.under_18') }}
                                             </option>
                                             <option value="Person with Disability"
                                                 {{ $witness->others_info === 'Person with Disability' ? 'selected' : '' }}>
-                                                Person with Disability
+                                                {{ __('case.person_with_disability') }}
                                             </option>
                                         </select>
                                     </td>
+
 
                                     {{-- SMS Seen --}}
                                     <td class="text-center">
@@ -120,7 +123,7 @@
 
                 <div class="card-footer text-end">
                     <button type="submit" class="btn btn-primary">
-                        Save Attendance
+                        {{ __('case.save_attendance') }}
                     </button>
                 </div>
             </form>
