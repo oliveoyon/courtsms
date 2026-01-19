@@ -51,6 +51,7 @@
     {{-- KPI Cards --}}
     <div class="row mb-4 g-3" id="kpiCards" style="margin-top:15px;">
         @foreach ([
+            'totalCases' => ['label' => __('dashboard.total_cases'), 'color' => ['#845ef7','#5f3dc4'], 'icon' => 'fa-solid fa-gavel'],
             'totalSms' => ['label' => __('dashboard.total_sms'), 'color' => ['#4dabf7','#1c7ed6'], 'icon' => 'fa-solid fa-sms'],
             'sentSms' => ['label' => __('dashboard.sent'), 'color' => ['#51cf66','#2b8a3e'], 'icon' => 'fa-solid fa-paper-plane'],
             'pendingSms' => ['label' => __('dashboard.pending'), 'color' => ['#ffd43b','#ffb703'], 'icon' => 'fa-solid fa-clock'],
@@ -281,7 +282,9 @@ document.addEventListener('DOMContentLoaded', function() {
 
         fetch(`{{ route('admin.reports.court_sms_dashboard.data') }}?${params.toString()}`)
             .then(res => res.json())
-            .then(data => {
+            .then(res => {
+                const data = res.summary;
+                const totalCases = res.total_cases || 0;
                 const tbody = document.querySelector('#smsTable tbody');
                 tbody.innerHTML = '';
                 let totalSms = 0, sent = 0, pending = 0, failed = 0, appeared = 0, rescheduled = 0;
@@ -310,6 +313,8 @@ document.addEventListener('DOMContentLoaded', function() {
                     rescheduled += row.rescheduled_cases;
                 });
 
+                // Animate counters
+                animateCounter(document.getElementById('totalCases'), totalCases);
                 animateCounter(document.getElementById('totalSms'), totalSms);
                 animateCounter(document.getElementById('sentSms'), sent);
                 animateCounter(document.getElementById('pendingSms'), pending);
@@ -354,49 +359,33 @@ document.addEventListener('DOMContentLoaded', function() {
                     {label:'{{ __("dashboard.failed") }}',data:failedData,backgroundColor:'#dc3545'}
                 ]
             },
-            options:{responsive:true,plugins:{legend:{position:'bottom'}},scales:{y:{beginAtZero:true}}}
+            options:{responsive:true,plugins:{legend:{position:'top'}},scales:{y:{beginAtZero:true}}}
         });
 
         const appearedData = data.map(d=>d.witness_appeared);
-        const notAppearedData = data.map(d=>d.total_sms_sent - d.witness_appeared);
         const doughnutCtx = document.getElementById('doughnutChart').getContext('2d');
         if(doughnutChart) doughnutChart.destroy();
         doughnutChart = new Chart(doughnutCtx,{
             type:'doughnut',
-            data:{labels:['{{ __("dashboard.appeared") }}','{{ __("dashboard.not_appeared") }}'],
-                  datasets:[{data:[appearedData.reduce((a,b)=>a+b,0),notAppearedData.reduce((a,b)=>a+b,0)],
-                             backgroundColor:['#007bff','#6c757d']}]},
+            data:{labels:courts,datasets:[{data:appearedData,backgroundColor:colors}]},
             options:{responsive:true,plugins:{legend:{position:'bottom'}}}
         });
 
         const rescheduledData = data.map(d=>d.rescheduled_cases);
-        const horizontalCtx = document.getElementById('horizontalBarChart').getContext('2d');
+        const hBarCtx = document.getElementById('horizontalBarChart').getContext('2d');
         if(horizontalBarChart) horizontalBarChart.destroy();
-        horizontalBarChart = new Chart(horizontalCtx,{
+        horizontalBarChart = new Chart(hBarCtx,{
             type:'bar',
-            data:{labels:courts,datasets:[{label:'{{ __("dashboard.rescheduled") }}',data:rescheduledData,backgroundColor:'#6c757d'}]},
+            data:{labels:courts,datasets:[{label:'{{ __("dashboard.cases_rescheduled") }}',data:rescheduledData,backgroundColor:'#6c757d'}]},
             options:{indexAxis:'y',responsive:true,plugins:{legend:{display:false}},scales:{x:{beginAtZero:true}}}
         });
 
-        const lineChartCard = document.getElementById('lineChartCard');
-        if(courtSelect.value){
-            lineChartCard.style.display='none';
-        } else {
-            lineChartCard.style.display='flex';
-            const lineCtx = document.getElementById('lineChart').getContext('2d');
-            if(lineChart) lineChart.destroy();
-            lineChart = new Chart(lineCtx,{
-                type:'line',
-                data:{labels:courts,datasets:[
-                    {label:'{{ __("dashboard.sent") }}',data:sentData,borderColor:'#28a745',fill:false,tension:0.3},
-                    {label:'{{ __("dashboard.pending") }}',data:pendingData,borderColor:'#ffc107',fill:false,tension:0.3},
-                    {label:'{{ __("dashboard.failed") }}',data:failedData,borderColor:'#dc3545',fill:false,tension:0.3}
-                ]},
-                options:{responsive:true,plugins:{legend:{position:'bottom'}},scales:{y:{beginAtZero:true}}}
-            });
-        }
+        // Hide line chart if court selected
+        const lineCard = document.getElementById('lineChartCard');
+        if(courtSelect.value) { lineCard.style.display='none'; } else { lineCard.style.display='flex'; }
     }
 
+    // Initialize filters + auto-load
     initFilters();
 });
 </script>

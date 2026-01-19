@@ -16,7 +16,7 @@ class CourtSmsReportController extends Controller
 
         $divisions = $user->district_id
             ? Division::with([
-                'districts' => fn($q) => $q->where('id', $user->district_id),
+                'districts' => fn ($q) => $q->where('id', $user->district_id),
                 'districts.courts'
             ])->get()
             : Division::with('districts.courts')->get();
@@ -32,44 +32,56 @@ class CourtSmsReportController extends Controller
         $fromDate   = $request->query('from_date');
         $toDate     = $request->query('to_date');
 
-        $cases = CourtCase::with([
-            'hearings.notifications',
+        $casesQuery = CourtCase::with([
+            'hearings.notifications.notifications',
             'hearings.witnesses',
             'court.district.division'
         ]);
 
-        // Flexible filtering
         if ($divisionId) {
-            $cases->whereHas('court.district.division', fn($q) => $q->where('id', $divisionId));
-        }
-        if ($districtId) {
-            $cases->whereHas('court.district', fn($q) => $q->where('id', $districtId));
-        }
-        if ($courtId) {
-            $cases->where('court_id', $courtId);
-        }
-        if ($fromDate) {
-            $cases->whereHas('hearings', fn($q) => $q->whereDate('hearing_date', '>=', $fromDate));
-        }
-        if ($toDate) {
-            $cases->whereHas('hearings', fn($q) => $q->whereDate('hearing_date', '<=', $toDate));
+            $casesQuery->whereHas('court.district.division', fn ($q) => $q->where('id', $divisionId));
         }
 
-        $cases = $cases->get();
+        if ($districtId) {
+            $casesQuery->whereHas('court.district', fn ($q) => $q->where('id', $districtId));
+        }
+
+        if ($courtId) {
+            $casesQuery->where('court_id', $courtId);
+        }
+
+        if ($fromDate) {
+            $casesQuery->whereHas('hearings', fn ($q) =>
+                $q->whereDate('hearing_date', '>=', $fromDate)
+            );
+        }
+
+        if ($toDate) {
+            $casesQuery->whereHas('hearings', fn ($q) =>
+                $q->whereDate('hearing_date', '<=', $toDate)
+            );
+        }
+
+        $cases = $casesQuery->get();
+
+        // ✅ Total distinct cases
+        $totalCases = $cases->pluck('id')->unique()->count();
 
         $summary = [];
 
         foreach ($cases as $case) {
             foreach ($case->hearings as $hearing) {
-                $allNotifications = $hearing->notifications->flatMap(fn($schedule) => $schedule->notifications ?? collect());
-                $witnesses = $hearing->witnesses;
+                $notifications = $hearing->notifications
+                    ->flatMap(fn ($s) => $s->notifications ?? collect());
 
-                $sent      = $allNotifications->whereIn('status', ['sent', 'delivered'])->count();
-                $pending   = $allNotifications->where('status', 'pending')->count();
-                $failed    = $allNotifications->where('status', 'failed')->count();
-                $totalSms  = $allNotifications->count();
-                $appeared  = $witnesses->where('appeared_status', 'appeared')->count();
-                $rescheduled = $hearing->is_reschedule ? 1 : 0;
+                $sent     = $notifications->whereIn('status', ['sent', 'delivered'])->count();
+                $pending  = $notifications->where('status', 'pending')->count();
+                $failed   = $notifications->where('status', 'failed')->count();
+                $totalSms = $notifications->count();
+
+                $appeared = $hearing->witnesses
+                    ->where('appeared_status', 'appeared')
+                    ->count();
 
                 $summary[] = [
                     'division'          => optional($case->court->district->division)->name_en ?? '-',
@@ -80,27 +92,31 @@ class CourtSmsReportController extends Controller
                     'pending'           => $pending,
                     'failed'            => $failed,
                     'witness_appeared'  => $appeared,
-                    'rescheduled_cases' => $rescheduled,
+                    'rescheduled_cases' => $hearing->is_reschedule ? 1 : 0,
                 ];
             }
         }
 
-        // Combine by division/district/court
+        // Combine by court
         $combined = [];
         foreach ($summary as $row) {
-            $key = $row['division'] . '|' . $row['district'] . '|' . $row['court'];
+            $key = $row['division'].'|'.$row['district'].'|'.$row['court'];
+
             if (!isset($combined[$key])) {
                 $combined[$key] = $row;
             } else {
-                $combined[$key]['total_sms_sent']    += $row['total_sms_sent'];
-                $combined[$key]['sent']              += $row['sent'];
-                $combined[$key]['pending']           += $row['pending'];
-                $combined[$key]['failed']            += $row['failed'];
-                $combined[$key]['witness_appeared']  += $row['witness_appeared'];
-                $combined[$key]['rescheduled_cases'] += $row['rescheduled_cases'];
+                foreach ([
+                    'total_sms_sent','sent','pending',
+                    'failed','witness_appeared','rescheduled_cases'
+                ] as $field) {
+                    $combined[$key][$field] += $row[$field];
+                }
             }
         }
 
-        return response()->json(array_values($combined));
+        return response()->json([
+            'summary'     => array_values($combined),
+            'total_cases' => $totalCases
+        ]);
     }
 }

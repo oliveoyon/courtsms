@@ -51,4 +51,5 @@ return [
     'total'                              => 'Total',
     'all'                                => 'All',
     'date_range'                          => 'Date Range',
+    'total_cases'                        => 'Total Cases',
 ];
