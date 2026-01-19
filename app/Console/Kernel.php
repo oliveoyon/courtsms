@@ -7,18 +7,11 @@ use Illuminate\Foundation\Console\Kernel as ConsoleKernel;
 
 class Kernel extends ConsoleKernel
 {
-    protected function schedule(Schedule $schedule): void
+    protected function schedule(Schedule $schedule)
     {
-        file_put_contents(
-            storage_path('logs/kernel_loaded.log'),
-            'Kernel loaded at ' . now() . PHP_EOL,
-            FILE_APPEND
-        );
-
-        $schedule->call(function () {
-            \Log::info('Scheduler closure executed');
-        })->everyMinute();
+        $schedule->command('court:sms:dispatch')->everyMinute()->withoutOverlapping();
     }
+
 
 
     protected function commands(): void
