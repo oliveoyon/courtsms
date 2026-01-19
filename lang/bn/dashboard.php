@@ -15,7 +15,7 @@ return [
     'select_district_first'          => 'প্রথমে জেলা নির্বাচন করুন',
     'total_sms'                       => 'মোট এসএমএস',
     'sent'                            => 'পাঠানো হয়েছে',
-    'pending'                         => 'মুলতুবি',
+    'pending'                         => 'পেন্ডিং',
     'failed'                          => 'ব্যর্থ',
     'witness_appeared'                => 'সাক্ষী উপস্থিত হয়েছে',
     'cases_rescheduled'               => 'মামলা পুনঃনির্ধারিত',
