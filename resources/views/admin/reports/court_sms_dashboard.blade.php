@@ -11,9 +11,8 @@
             <select id="filterDivision" class="form-select" {{ isset($user) && $user->division_id ? 'disabled' : '' }}>
                 <option value="">{{ __('dashboard.all_divisions') }}</option>
                 @foreach ($divisions as $division)
-                    <option value="{{ $division->id }}"
-                        {{ isset($user) && $user->division_id == $division->id ? 'selected' : '' }}>
-                        {{ app()->getLocale() === 'bn' ? (is_array($division->name_bn) ? implode(', ', $division->name_bn) : $division->name_bn) : (is_array($division->name_en) ? implode(', ', $division->name_en) : $division->name_en) }}
+                    <option value="{{ $division->id }}" {{ isset($user) && $user->division_id == $division->id ? 'selected' : '' }}>
+                        {{ app()->getLocale() === 'bn' ? $division->name_bn : $division->name_en }}
                     </option>
                 @endforeach
             </select>
@@ -51,7 +50,7 @@
     {{-- KPI Cards --}}
     <div class="row mb-4 g-3" id="kpiCards" style="margin-top:15px;">
         @foreach ([
-            'totalCases' => ['label' => __('dashboard.total_cases'), 'color' => ['#845ef7','#5f3dc4'], 'icon' => 'fa-solid fa-gavel'],
+            'totalCases' => ['label' => __('dashboard.total_cases'), 'color' => ['#7950f2','#5f3dc4'], 'icon' => 'fa-solid fa-file-lines'],
             'totalSms' => ['label' => __('dashboard.total_sms'), 'color' => ['#4dabf7','#1c7ed6'], 'icon' => 'fa-solid fa-sms'],
             'sentSms' => ['label' => __('dashboard.sent'), 'color' => ['#51cf66','#2b8a3e'], 'icon' => 'fa-solid fa-paper-plane'],
             'pendingSms' => ['label' => __('dashboard.pending'), 'color' => ['#ffd43b','#ffb703'], 'icon' => 'fa-solid fa-clock'],
@@ -62,9 +61,7 @@
             <div class="col-6 col-md-4 col-lg-2">
                 <div class="kpi-card-modern shadow-sm rounded p-3 d-flex align-items-center"
                      style="background: linear-gradient(135deg, {{ $card['color'][0] }}, {{ $card['color'][1] }}); 
-                            color:white;
-                            box-shadow: 0 4px 20px rgba(0,0,0,0.1);
-                            transition: transform 0.3s, box-shadow 0.3s;">
+                            color:white; box-shadow: 0 4px 20px rgba(0,0,0,0.1); transition: transform 0.3s, box-shadow 0.3s;">
                     <div class="kpi-icon d-flex justify-content-center align-items-center me-3"
                          style="width:50px; height:50px; border-radius:50%; font-size:1.4rem; background: rgba(255,255,255,0.2);">
                         <i class="{{ $card['icon'] }}"></i>
@@ -80,6 +77,7 @@
 
     {{-- Charts --}}
     <div class="row mb-4 g-3">
+        {{-- Pie chart --}}
         <div class="col-12 col-md-6 mb-3 d-flex">
             <div class="card flex-fill shadow-sm rounded">
                 <div class="card-header text-white" style="background: linear-gradient(135deg, var(--bs-info), rgba(0,0,0,0.1));">
@@ -91,6 +89,7 @@
             </div>
         </div>
 
+        {{-- Bar chart --}}
         <div class="col-12 col-md-6 mb-3 d-flex">
             <div class="card flex-fill shadow-sm rounded">
                 <div class="card-header text-white" style="background: linear-gradient(135deg, var(--bs-success), rgba(0,0,0,0.1));">
@@ -102,6 +101,7 @@
             </div>
         </div>
 
+        {{-- Doughnut chart --}}
         <div class="col-12 col-md-6 mb-3 d-flex">
             <div class="card flex-fill shadow-sm rounded">
                 <div class="card-header text-white" style="background: linear-gradient(135deg, var(--bs-primary), rgba(0,0,0,0.1));">
@@ -113,6 +113,7 @@
             </div>
         </div>
 
+        {{-- Horizontal bar --}}
         <div class="col-12 col-md-6 mb-3 d-flex">
             <div class="card flex-fill shadow-sm rounded">
                 <div class="card-header text-white" style="background: linear-gradient(135deg, var(--bs-secondary), rgba(0,0,0,0.1));">
@@ -124,6 +125,7 @@
             </div>
         </div>
 
+        {{-- Line chart --}}
         <div class="col-12 mb-3 d-flex" id="lineChartCard">
             <div class="card flex-fill shadow-sm rounded">
                 <div class="card-header text-white" style="background: linear-gradient(135deg, var(--bs-warning), rgba(0,0,0,0.1));">
@@ -150,6 +152,7 @@
                                 <th>{{ __('dashboard.division') }}</th>
                                 <th>{{ __('dashboard.district') }}</th>
                                 <th>{{ __('dashboard.court') }}</th>
+                                <th>{{ __('dashboard.total_cases') }}</th>
                                 <th>{{ __('dashboard.total_sms') }}</th>
                                 <th>{{ __('dashboard.sent') }}</th>
                                 <th>{{ __('dashboard.pending') }}</th>
@@ -187,52 +190,62 @@
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script>
 document.addEventListener('DOMContentLoaded', function() {
-    const locale = '{{ app()->getLocale() }}';
     const divisionSelect = document.getElementById('filterDivision');
     const districtSelect = document.getElementById('filterDistrict');
     const courtSelect = document.getElementById('filterCourt');
     const fromDate = document.getElementById('fromDate');
     const toDate = document.getElementById('toDate');
     const btnFilter = document.getElementById('btnFilter');
+
     const userDivision = '{{ $user->division_id ?? '' }}';
     const userDistrict = '{{ $user->district_id ?? '' }}';
     const userCourt = '{{ $user->court_id ?? '' }}';
 
+    let pieChart, barChart, doughnutChart, horizontalBarChart, lineChart;
+
+    function animateCounter(element, value) {
+        let start = 0;
+        const duration = 1000;
+        const increment = value / (duration / 16);
+        function step() {
+            start += increment;
+            if (start < value) {
+                element.textContent = Math.floor(start);
+                requestAnimationFrame(step);
+            } else element.textContent = value;
+        }
+        requestAnimationFrame(step);
+    }
+
     function fetchDistricts(divisionId, selected = 0) {
         courtSelect.innerHTML = `<option>{{ __('dashboard.select_district_first') }}</option>`;
         if (!divisionId) return Promise.resolve();
-        return fetch(`/admin/divisions/${divisionId}/districts`)
-            .then(res => res.json())
-            .then(data => {
-                districtSelect.innerHTML = `<option value="">{{ __('dashboard.all_districts') }}</option>`;
-                data.forEach(d => {
-                    const opt = document.createElement('option');
-                    opt.value = d.id;
-                    let name = locale === 'bn' ? (Array.isArray(d.name_bn) ? d.name_bn.join(', ') : d.name_bn) : (Array.isArray(d.name_en) ? d.name_en.join(', ') : d.name_en);
-                    opt.textContent = name;
-                    if (selected == d.id) opt.selected = true;
-                    districtSelect.appendChild(opt);
-                });
-                if (!userDistrict) districtSelect.disabled = false;
+        return fetch(`/admin/divisions/${divisionId}/districts`).then(res => res.json()).then(data => {
+            districtSelect.innerHTML = `<option value="">{{ __('dashboard.all_districts') }}</option>`;
+            data.forEach(d => {
+                const opt = document.createElement('option');
+                opt.value = d.id;
+                opt.textContent = d.name_en;
+                if (selected == d.id) opt.selected = true;
+                districtSelect.appendChild(opt);
             });
+            if (!userDistrict) districtSelect.disabled = false;
+        });
     }
 
     function fetchCourts(districtId, selected = 0) {
         if (!districtId) return Promise.resolve();
-        return fetch(`/admin/districts/${districtId}/courts`)
-            .then(res => res.json())
-            .then(data => {
-                courtSelect.innerHTML = `<option value="">{{ __('dashboard.all_courts') }}</option>`;
-                data.forEach(c => {
-                    const opt = document.createElement('option');
-                    opt.value = c.id;
-                    let name = locale === 'bn' ? (Array.isArray(c.name_bn) ? c.name_bn.join(', ') : c.name_bn) : (Array.isArray(c.name_en) ? c.name_en.join(', ') : c.name_en);
-                    opt.textContent = name;
-                    if (selected == c.id) opt.selected = true;
-                    courtSelect.appendChild(opt);
-                });
-                if (!userCourt) courtSelect.disabled = false;
+        return fetch(`/admin/districts/${districtId}/courts`).then(res => res.json()).then(data => {
+            courtSelect.innerHTML = `<option value="">{{ __('dashboard.all_courts') }}</option>`;
+            data.forEach(c => {
+                const opt = document.createElement('option');
+                opt.value = c.id;
+                opt.textContent = c.name_en;
+                if (selected == c.id) opt.selected = true;
+                courtSelect.appendChild(opt);
             });
+            if (!userCourt) courtSelect.disabled = false;
+        });
     }
 
     function initFilters() {
@@ -255,22 +268,6 @@ document.addEventListener('DOMContentLoaded', function() {
     districtSelect?.addEventListener('change', function() { fetchCourts(this.value); });
     btnFilter.addEventListener('click', loadMetrics);
 
-    let pieChart, barChart, doughnutChart, horizontalBarChart, lineChart;
-
-    function animateCounter(element, value) {
-        let start = 0;
-        const duration = 1000;
-        const increment = value / (duration / 16);
-        function step() {
-            start += increment;
-            if (start < value) {
-                element.textContent = Math.floor(start);
-                requestAnimationFrame(step);
-            } else element.textContent = value;
-        }
-        requestAnimationFrame(step);
-    }
-
     function loadMetrics() {
         const params = new URLSearchParams({
             division_id: divisionSelect.value,
@@ -282,15 +279,13 @@ document.addEventListener('DOMContentLoaded', function() {
 
         fetch(`{{ route('admin.reports.court_sms_dashboard.data') }}?${params.toString()}`)
             .then(res => res.json())
-            .then(res => {
-                const data = res.summary;
-                const totalCases = res.total_cases || 0;
+            .then(data => {
                 const tbody = document.querySelector('#smsTable tbody');
                 tbody.innerHTML = '';
-                let totalSms = 0, sent = 0, pending = 0, failed = 0, appeared = 0, rescheduled = 0;
+                let totalCases = 0, totalSms = 0, sent = 0, pending = 0, failed = 0, appeared = 0, rescheduled = 0;
 
                 if (data.length === 0) {
-                    tbody.innerHTML = `<tr><td colspan="9" class="text-center">{{ __('dashboard.no_data_found') }}</td></tr>`;
+                    tbody.innerHTML = `<tr><td colspan="10" class="text-center">{{ __('dashboard.no_data_found') }}</td></tr>`;
                 }
 
                 data.forEach(row => {
@@ -298,13 +293,15 @@ document.addEventListener('DOMContentLoaded', function() {
                         <td>${row.division}</td>
                         <td>${row.district}</td>
                         <td>${row.court}</td>
-                        <td><span class="table-status-badge table-status-primary">${row.total_sms_sent}</span></td>
-                        <td><span class="table-status-badge table-status-success">${row.sent}</span></td>
-                        <td><span class="table-status-badge table-status-warning">${row.pending}</span></td>
-                        <td><span class="table-status-badge table-status-danger">${row.failed}</span></td>
-                        <td><span class="table-status-badge table-status-success">${row.witness_appeared}</span></td>
-                        <td><span class="table-status-badge table-status-secondary">${row.rescheduled_cases}</span></td>
+                        <td>${row.total_cases}</td>
+                        <td>${row.total_sms_sent}</td>
+                        <td>${row.sent}</td>
+                        <td>${row.pending}</td>
+                        <td>${row.failed}</td>
+                        <td>${row.witness_appeared}</td>
+                        <td>${row.rescheduled_cases}</td>
                     </tr>`;
+                    totalCases += row.total_cases;
                     totalSms += row.total_sms_sent;
                     sent += row.sent;
                     pending += row.pending;
@@ -313,7 +310,6 @@ document.addEventListener('DOMContentLoaded', function() {
                     rescheduled += row.rescheduled_cases;
                 });
 
-                // Animate counters
                 animateCounter(document.getElementById('totalCases'), totalCases);
                 animateCounter(document.getElementById('totalSms'), totalSms);
                 animateCounter(document.getElementById('sentSms'), sent);
@@ -323,13 +319,13 @@ document.addEventListener('DOMContentLoaded', function() {
                 animateCounter(document.getElementById('rescheduled'), rescheduled);
 
                 renderCharts(data);
-            })
-            .catch(err => console.error(err));
+            }).catch(err => console.error(err));
     }
 
     function renderCharts(data) {
         const labels = ['{{ __("dashboard.sent") }}','{{ __("dashboard.pending") }}','{{ __("dashboard.failed") }}'];
         const colors = ['#28a745','#ffc107','#dc3545'];
+
         const totalSent = data.reduce((a,b)=>a+b.sent,0);
         const totalPending = data.reduce((a,b)=>a+b.pending,0);
         const totalFailed = data.reduce((a,b)=>a+b.failed,0);
@@ -338,8 +334,8 @@ document.addEventListener('DOMContentLoaded', function() {
         if(pieChart) pieChart.destroy();
         pieChart = new Chart(pieCtx,{
             type:'pie',
-            data:{labels:labels,datasets:[{data:[totalSent,totalPending,totalFailed],backgroundColor:colors}]},
-            options:{responsive:true,plugins:{legend:{position:'bottom',labels:{boxWidth:20}}}}
+            data:{labels, datasets:[{data:[totalSent,totalPending,totalFailed], backgroundColor:colors}]},
+            options:{responsive:true,plugins:{legend:{position:'bottom'}}}
         });
 
         const courts = data.map(d=>d.court);
@@ -351,41 +347,44 @@ document.addEventListener('DOMContentLoaded', function() {
         if(barChart) barChart.destroy();
         barChart = new Chart(barCtx,{
             type:'bar',
-            data:{
-                labels:courts,
-                datasets:[
-                    {label:'{{ __("dashboard.sent") }}',data:sentData,backgroundColor:'#28a745'},
-                    {label:'{{ __("dashboard.pending") }}',data:pendingData,backgroundColor:'#ffc107'},
-                    {label:'{{ __("dashboard.failed") }}',data:failedData,backgroundColor:'#dc3545'}
-                ]
-            },
-            options:{responsive:true,plugins:{legend:{position:'top'}},scales:{y:{beginAtZero:true}}}
+            data:{labels:courts, datasets:[
+                {label:'{{ __("dashboard.sent") }}',data:sentData, backgroundColor:'#28a745'},
+                {label:'{{ __("dashboard.pending") }}',data:pendingData, backgroundColor:'#ffc107'},
+                {label:'{{ __("dashboard.failed") }}',data:failedData, backgroundColor:'#dc3545'}
+            ]},
+            options:{responsive:true,plugins:{legend:{position:'bottom'}},scales:{y:{beginAtZero:true}}}
         });
 
         const appearedData = data.map(d=>d.witness_appeared);
+        const notAppearedData = data.map(d=>d.total_sms_sent - d.witness_appeared);
         const doughnutCtx = document.getElementById('doughnutChart').getContext('2d');
         if(doughnutChart) doughnutChart.destroy();
         doughnutChart = new Chart(doughnutCtx,{
             type:'doughnut',
-            data:{labels:courts,datasets:[{data:appearedData,backgroundColor:colors}]},
+            data:{labels:['{{ __("dashboard.appeared") }}','{{ __("dashboard.not_appeared") }}'],
+                  datasets:[{data:[appearedData.reduce((a,b)=>a+b,0), notAppearedData.reduce((a,b)=>a+b,0)], backgroundColor:['#007bff','#6c757d']}]},
             options:{responsive:true,plugins:{legend:{position:'bottom'}}}
         });
 
         const rescheduledData = data.map(d=>d.rescheduled_cases);
-        const hBarCtx = document.getElementById('horizontalBarChart').getContext('2d');
+        const horizontalCtx = document.getElementById('horizontalBarChart').getContext('2d');
         if(horizontalBarChart) horizontalBarChart.destroy();
-        horizontalBarChart = new Chart(hBarCtx,{
+        horizontalBarChart = new Chart(horizontalCtx,{
             type:'bar',
             data:{labels:courts,datasets:[{label:'{{ __("dashboard.cases_rescheduled") }}',data:rescheduledData,backgroundColor:'#6c757d'}]},
             options:{indexAxis:'y',responsive:true,plugins:{legend:{display:false}},scales:{x:{beginAtZero:true}}}
         });
 
-        // Hide line chart if court selected
-        const lineCard = document.getElementById('lineChartCard');
-        if(courtSelect.value) { lineCard.style.display='none'; } else { lineCard.style.display='flex'; }
+        const lineCtx = document.getElementById('lineChart').getContext('2d');
+        if(lineChart) lineChart.destroy();
+        const trendData = data.map(d=>d.total_sms_sent); // Example for trend
+        lineChart = new Chart(lineCtx,{
+            type:'line',
+            data:{labels:courts,datasets:[{label:'{{ __("dashboard.sms_trend") }}',data:trendData,borderColor:'#ffc107',backgroundColor:'rgba(255,193,7,0.2)',fill:true}]},
+            options:{responsive:true,plugins:{legend:{display:false}},scales:{y:{beginAtZero:true}}}
+        });
     }
 
-    // Initialize filters + auto-load
     initFilters();
 });
 </script>
