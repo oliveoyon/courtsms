@@ -16,9 +16,18 @@ use Mpdf\Config\FontVariables;
 
 class HearingManagementController extends Controller
 {
-    /**
-     * Show hearings (POST-secured filter)
-     */
+    public function __construct()
+    {
+        // Hearing list & filtering
+        $this->middleware('permission:View Hearing')->only(['index']);
+        // Attendance
+        $this->middleware('permission:Take Hearing Attendance')->only(['attendanceForm', 'storeAttendance']);
+        // Reschedule
+        $this->middleware('permission:Reschedule Hearing')->only(['rescheduleForm', 'storeReschedule']);
+        // Print
+        $this->middleware('permission:Print Hearing Attendance')->only(['print']);
+    }
+
     public function index(Request $request)
     {
         $user = Auth::user();

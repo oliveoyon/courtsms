@@ -27,8 +27,6 @@ Route::get('/', function () {
 
 Route::get('language/{locale}', [LanguageController::class, 'setLocale'])->name('locale.set');
 
-
-
 Route::middleware('auth')->group(function () {
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
@@ -37,14 +35,21 @@ Route::middleware('auth')->group(function () {
 
 
 Route::prefix('admin')->name('admin.')->middleware(['auth'])->group(function () {
-    Route::get('/home', [DashboardController::class, 'index'])->name('dashboard');
+    // Route::get('/home', [DashboardController::class, 'index'])->name('dashboard');
+    Route::get('/home', function () {
+        return redirect()->route('admin.reports.court_sms_dashboard');
+    })->name('dashboard');
+    Route::get('reports/court-sms-dashboard', [CourtSmsReportController::class, 'index'])->name('reports.court_sms_dashboard');
     Route::get('/home-test', [DashboardController::class, 'test'])->name('dashboard.test');
+
+    // Permission and Roles RBAC
     Route::resource('permission-groups', PermissionGroupController::class)->except(['show']);
     Route::resource('permissions', PermissionController::class)->except(['show']);
     Route::resource('roles', RoleController::class)->except(['show']);
     Route::get('roles/{role}/permissions', [RoleController::class, 'permissions'])->name('roles.permissions');
     Route::post('roles/{role}/assign-permissions', [RoleController::class, 'assignPermissions'])->name('roles.assignPermissions');
 
+    // Master Data
     Route::resource('users', UserController::class);
     Route::resource('divisions', DivisionController::class);
     Route::resource('districts', DistrictController::class);
@@ -52,54 +57,28 @@ Route::prefix('admin')->name('admin.')->middleware(['auth'])->group(function () 
     Route::get('divisions/{division}/districts', [DivisionController::class, 'districts']);
     Route::get('districts/{district}/courts', [DistrictController::class, 'courts']);
 
-
-    Route::get('cases/create-and-send', [CourtCaseController::class, 'createAndSend'])->name('cases.create_send');
-    Route::post('cases/create-and-send', [CourtCaseController::class, 'storeAndSend'])->name('cases.store_send');
+    // Sending and Scheduling SMS + SMS Templating + Hearing and Attendance
     Route::resource('message-templates', MessageTemplateController::class);
     Route::resource('message-template-categories', MessageTemplateCategoryController::class);
+    Route::get('cases/create-and-send', [CourtCaseController::class, 'createAndSend'])->name('cases.create_send');
+    Route::post('cases/create-and-send', [CourtCaseController::class, 'storeAndSend'])->name('cases.store_send');
+    Route::match(['get', 'post'], '/hearings', [HearingManagementController::class, 'index'])->name('hearings.index');
+    Route::post('/hearings/{hearing}/attendance/start', [HearingManagementController::class, 'attendanceForm'])->name('hearings.attendance.start');
+    Route::post('/hearings/{hearing}/reschedule/start', [HearingManagementController::class, 'rescheduleForm'])->name('hearings.reschedule.start');
+    Route::post('/hearings/{hearing}/attendance', [HearingManagementController::class, 'storeAttendance'])->name('hearings.attendance.store');
+    Route::post('/hearings/{hearing}/reschedule', [HearingManagementController::class, 'storeReschedule'])->name('hearings.reschedule.store');
+    Route::post('/hearings/print', [HearingManagementController::class, 'print'])->name('hearings.print');
 
-    
-    Route::match(['get', 'post'], '/hearings', [HearingManagementController::class, 'index'])
-        ->name('hearings.index');
-
-    // Attendance / Reschedule start - POST only
-    Route::post('/hearings/{hearing}/attendance/start', [HearingManagementController::class, 'attendanceForm'])
-        ->name('hearings.attendance.start');
-
-    Route::post('/hearings/{hearing}/reschedule/start', [HearingManagementController::class, 'rescheduleForm'])
-        ->name('hearings.reschedule.start');
-
-    // Storing attendance / reschedule - POST
-    Route::post('/hearings/{hearing}/attendance', [HearingManagementController::class, 'storeAttendance'])
-        ->name('hearings.attendance.store');
-
-    Route::post('/hearings/{hearing}/reschedule', [HearingManagementController::class, 'storeReschedule'])
-        ->name('hearings.reschedule.store');
-
-    // Printing filtered list
-    Route::post('/hearings/print', [HearingManagementController::class, 'print'])
-        ->name('hearings.print');
-
-
-
-    Route::get('/test-sms', [SmsController::class, 'testSend']);
-    Route::get('/test-otp', [SmsController::class, 'testOtp']);
-
-    Route::get('/debug-sms', [TestSmsDebugController::class, 'send']);
-
-
-    // dd(class_exists(\App\Http\Controllers\Admin\AnalyticsController::class));
-
-    Route::get('analytics/overview', [AnalyticsController::class, 'overview'])
-            ->name('analytics.overview');
-    
-            Route::get('analytics/sms-summary', [AnalyticsController::class, 'smsSummary'])
-    ->name('analytics.sms.summary');
-
-    
+    // Reporting and Dashboard
+    Route::get('analytics/overview', [AnalyticsController::class, 'overview'])->name('analytics.overview');
+    Route::get('analytics/sms-summary', [AnalyticsController::class, 'smsSummary'])->name('analytics.sms.summary');
     Route::get('reports/court-sms-dashboard', [CourtSmsReportController::class, 'index'])->name('reports.court_sms_dashboard');
     Route::get('reports/court-sms-dashboard/data', [CourtSmsReportController::class, 'getMetrics'])->name('reports.court_sms_dashboard.data');
-    
+
+    // SMS Testing
+    Route::get('/test-sms', [SmsController::class, 'testSend']);
+    Route::get('/test-otp', [SmsController::class, 'testOtp']);
+    Route::get('/debug-sms', [TestSmsDebugController::class, 'send']);
 });
 
 require __DIR__ . '/auth.php';
