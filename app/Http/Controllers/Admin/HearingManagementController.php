@@ -130,6 +130,8 @@ class HearingManagementController extends Controller
     {
         $hearing = CaseHearing::with(['case', 'case.witnesses'])->findOrFail($hearingId);
 
+        dd($hearing);
+
         $user = Auth::user();
         if ($user->division_id && $hearing->case->court->district->division_id != $user->division_id) {
             abort(403, 'Unauthorized.');
@@ -304,8 +306,15 @@ class HearingManagementController extends Controller
             'margin_left' => 10,
             'margin_right' => 10,
             'fontDir' => array_merge($fontDirs, [public_path('assets/fonts')]),
-            'fontdata' => $fontData + ['solaimanlipi' => ['R' => 'SolaimanLipi.ttf']],
+            'fontdata' => $fontData + [
+                'solaimanlipi' => [
+                    'R' => 'SolaimanLipi.ttf',
+                    // 'B' => 'SolaimanLipi-Bold.ttf', // optional bold
+                ]
+            ],
             'default_font' => 'solaimanlipi',
+            'autoScriptToLang' => true,
+            'autoLangToFont' => true,
         ]);
 
         $mpdf->WriteHTML($html);

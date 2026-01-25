@@ -16,8 +16,8 @@
 
 <h3 style="text-align: center;">CourtSMS Attendance Report</h3>
 <p>
-    জেলা (District): {{ $districtName ?? '________________' }} &nbsp;&nbsp;
-    আদালতের নাম (Court Name): {{ $courtName ?? '________________' }} &nbsp;&nbsp;
+    জেলা (District): {{ auth()->user()?->district?->name_bn ?? '________________' }} &nbsp;&nbsp;
+    আদালতের নাম (Court Name): {{ auth()->user()?->court?->name_bn ?? '________________' }} &nbsp;&nbsp;
     তারিখ (Date): {{ \Carbon\Carbon::parse($date)->format('d-m-Y') }}
 </p>
 
@@ -36,78 +36,61 @@
         </tr>
     </thead>
     <tbody>
-        @php $serial = 1; @endphp
-        @foreach($hearings as $hearing)
-            @foreach($hearing->case->witnesses as $index => $witness)
-                <tr>
-                    @if($index === 0)
-                        <td rowspan="{{ $hearing->case->witnesses->count() }}">
-                            {{ $serial }}.<br>
-                            {{ $hearing->case->case_no }}
-                        </td>
-                    @endif
+@php $serial = 1; @endphp
 
-                    <td>{{ $witness->name ?? '________________' }}</td>
-                    <td>{{ $witness->phone ?? '________________' }}</td>
+@foreach($hearings as $hearing)
+    @php
+        $witnessCount = $hearing->witnesses->count();
+    @endphp
 
-                    <!-- Gender checkboxes -->
-                    <td>
-                        <div class="checkbox-group">
-                            <label><input type="checkbox"> Female</label>
-                            <label><input type="checkbox"> Male</label>
-                            <label><input type="checkbox"> Third Gender</label>
-                        </div>
-                    </td>
+    @foreach($hearing->witnesses as $index => $witness)
+        <tr>
+            {{-- ROWSPAN COLUMN (ONLY ON FIRST ROW) --}}
+            @if($index === 0)
+                <td rowspan="{{ $witnessCount }}">
+                    {{ $serial }}<br>
+                    {{ $hearing->case->case_no }}
+                </td>
+            @endif
 
-                    <!-- Type of Witness -->
-                    <td>
-                        <div class="checkbox-group">
-                            <label><input type="checkbox"> IO</label>
-                            <label><input type="checkbox"> MO</label>
-                            <label><input type="checkbox"> DNC</label>
-                            <label><input type="checkbox"> General</label>
-                            <label><input type="checkbox"> Other</label>
-                        </div>
-                    </td>
+            <td>{{ $witness->name ?? '________________' }}</td>
+            <td>{{ $witness->phone ?? '________________' }}</td>
 
-                    <!-- Other Info -->
-                    <td>
-                        <div class="checkbox-group">
-                            <label><input type="checkbox"> Under 18</label>
-                            <label><input type="checkbox"> Person with Disability</label>
-                        </div>
-                    </td>
+            <td>
+                <div class="checkbox-group">
+                    ☐ Female ☐ Male ☐ Third Gender
+                </div>
+            </td>
 
-                    <!-- Witness Appeared -->
-                    <td>
-                        <div class="checkbox-group">
-                            <label><input type="checkbox"> Present</label>
-                            <label><input type="checkbox"> Absent</label>
-                            <label><input type="checkbox"> Excused</label>
-                            <label><input type="checkbox"> Pending</label>
-                        </div>
-                    </td>
+            <td>
+                <div class="checkbox-group">
+                    ☐ IO ☐ MO ☐ DNC ☐ General ☐ Other
+                </div>
+            </td>
 
-                    <!-- SMS Seen -->
-                    <td>
-                        <div class="checkbox-group">
-                            <label><input type="checkbox"> Yes</label>
-                            <label><input type="checkbox"> No</label>
-                        </div>
-                    </td>
+            <td>
+                <div class="checkbox-group">
+                    ☐ Under 18<br>
+                    ☐ Person with Disability
+                </div>
+            </td>
 
-                    <!-- Witness Heard -->
-                    <td>
-                        <div class="checkbox-group">
-                            <label><input type="checkbox"> Yes</label>
-                            <label><input type="checkbox"> No</label>
-                        </div>
-                    </td>
-                </tr>
-            @endforeach
-            @php $serial++; @endphp
-        @endforeach
-    </tbody>
+            <td>
+                <div class="checkbox-group">
+                    ☐ Present ☐ Absent<br>
+                    ☐ Excused ☐ Pending
+                </div>
+            </td>
+
+            <td>☐ Yes ☐ No</td>
+            <td>☐ Yes ☐ No</td>
+        </tr>
+    @endforeach
+
+    @php $serial++; @endphp
+@endforeach
+</tbody>
+
 </table>
 
 <p>Prepared for manual attendance entry.</p>
