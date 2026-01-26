@@ -27,7 +27,7 @@
             <th>Serial + Case No</th>
             <th>Witness Name</th>
             <th>Mobile Number</th>
-            <th>Gender</th>
+            <th>Sex</th>
             <th>Type of Witness</th>
             <th>Other Info</th>
             <th>Witness Appeared</th>
