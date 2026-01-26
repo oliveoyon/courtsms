@@ -55,7 +55,7 @@
                         </tr>
                     </thead>
                     <tbody>
-                        @foreach ($hearing->case->witnesses as $i => $w)
+                        @foreach ($hearing->witnesses as $i => $w)
                         <tr>
                             <td>
                                 <input type="text"

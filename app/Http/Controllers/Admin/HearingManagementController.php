@@ -134,7 +134,7 @@ class HearingManagementController extends Controller
     {
         $hearing = CaseHearing::with(['case', 'case.witnesses'])->findOrFail($hearingId);
 
-        dd($hearing);
+        // dd($hearing);
 
         $user = Auth::user();
         if ($user->division_id && $hearing->case->court->district->division_id != $user->division_id) {
