@@ -15,7 +15,7 @@
 
                 {{-- Date --}}
                 <div class="col-md-2">
-                    <label class="form-label">{{ __('case.date') }}</label>
+                    <label class="form-label">{{ __('case.hearing_date') }}</label>
                     <input type="date" name="date" value="{{ $date }}" class="form-control">
                 </div>
 

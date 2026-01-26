@@ -274,8 +274,14 @@
                         @endcanany
 
                         <!-- Master Data -->
-                        @canany(['View Division', 'View District', 'View Court', 'View Message Template Category', 'View
-                            Message Template'])
+                        @canany([
+                            'View Division',
+                            'View District',
+                            'View Court',
+                            'View Message Template Category',
+                            'View
+                            Message Template',
+                            ])
                             <li class="nav-item">
                                 <a href="#" class="nav-link">
                                     <i class="nav-icon bi bi-building"></i>
@@ -344,6 +350,16 @@
                             </li>
                         @endcanany
 
+                        @canany(['Take Hearing Attendance'])
+                            <li class="nav-item">
+                                <a href="{{ route('admin.hearings.index') }}" class="nav-link">
+                                    <i class="nav-icon bi bi-check-circle"></i>
+                                    <p>{{ __('case.hearing_list') }}</p>
+                                </a>
+                            </li>
+                        @endcanany
+
+
                         <!-- Logout -->
                         @auth
                             <li class="nav-item">
@@ -378,7 +394,8 @@
             <div class="float-end d-none d-sm-inline">কারিগরি সহযোগিতায়ঃ জিআইজেড বাংলাদেশ</div>
             <strong>
                 কপিরাইট @php date('Y'); @endphp &copy;
-                <a href="https://adminlte.io" class="text-decoration-none">আইন ও বিচার বিভাগ - আইন, বিচার ও সংসদ বিষয়ক মন্ত্রণালয়</a>
+                <a href="https://adminlte.io" class="text-decoration-none">আইন ও বিচার বিভাগ - আইন, বিচার ও সংসদ বিষয়ক
+                    মন্ত্রণালয়</a>
             </strong>
         </footer>
     </div>

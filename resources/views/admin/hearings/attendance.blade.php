@@ -20,7 +20,7 @@
                     <table class="table table-bordered table-striped align-middle">
                         <thead class="table-light">
                             <tr>
-                                <th>{{ __('case.witness_name') }}</th>
+                                <th>{{ __('case.witnesses') }}</th>
                                 <th>{{ __('case.phone') }}</th>
                                 <th>{{ __('case.attendance') }}</th>
                                 <th>{{ __('case.gender') }}</th>
