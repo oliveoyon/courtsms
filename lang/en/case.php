@@ -63,4 +63,6 @@ return [
 
     // Reschedule
     'reschedule'             => 'Reschedule',
+    'both'                   => 'Both',
+    'type_of_witness'        => 'Type of Witness',
 ];

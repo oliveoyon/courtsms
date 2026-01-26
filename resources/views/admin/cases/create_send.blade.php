@@ -6,6 +6,7 @@
         <div class="container-fluid">
             <form id="caseForm">
                 @csrf
+
                 <!-- Case Details -->
                 <div class="card card-body mb-3">
                     <h5>{{ __('case.case_details') }}</h5>
@@ -81,16 +82,7 @@
                             <input type="date" name="hearing_date" class="form-control form-control-sm" id="hearingDate"
                                 required>
                         </div>
-                        {{-- <div class="col-md-2">
-                            <label>{{ __('case.hearing_time') }}</label>
-                            <input type="time" name="hearing_time" class="form-control form-control-sm" required>
-                        </div> --}}
                     </div>
-
-                    {{-- <div class="mt-2">
-                        <label>{{ __('case.notes') }}</label>
-                        <textarea name="notes" class="form-control form-control-sm"></textarea>
-                    </div> --}}
                 </div>
 
                 <!-- Witnesses -->
@@ -137,6 +129,7 @@
                     </div>
                 </div>
 
+                <!-- Preview -->
                 <div class="card card-body mb-3">
                     <h5>{{ __('case.preview_message') }}</h5>
                     <div id="previewMessage" class="border p-2 bg-light">{{ __('case.enter_preview') }}</div>
@@ -148,272 +141,219 @@
     </div>
 
     @push('scripts')
-        <script>
-            document.addEventListener('DOMContentLoaded', function() {
+<script>
+document.addEventListener('DOMContentLoaded', function() {
 
-                const divisionSelect = document.getElementById('division_id');
-                const districtSelect = document.getElementById('district_id');
-                const courtSelect = document.getElementById('court_id');
+    const divisionSelect = document.getElementById('division_id');
+    const districtSelect = document.getElementById('district_id');
+    const courtSelect = document.getElementById('court_id');
+    const locale = '{{ app()->getLocale() }}'; // 'en' or 'bn'
 
-                const locale = '{{ app()->getLocale() }}'; // 'en' or 'bn'
+    // --------------------------
+    // Division -> District
+    // --------------------------
+    divisionSelect?.addEventListener('change', function() {
+        const divisionId = this.value;
+        districtSelect.innerHTML = `<option value="">${locale === 'bn' ? 'জেলা নির্বাচন করুন' : 'Select District'}</option>`;
+        courtSelect.innerHTML = `<option value="">${locale === 'bn' ? 'আদালত নির্বাচন করুন' : 'Select Court'}</option>`;
+        if (!divisionId) return;
 
-                divisionSelect?.addEventListener('change', function() {
-                    const divisionId = this.value;
-                    districtSelect.innerHTML =
-                        `<option value="">${locale === 'bn' ? 'জেলা নির্বাচন করুন' : 'Select District'}</option>`;
-                    courtSelect.innerHTML =
-                        `<option value="">${locale === 'bn' ? 'আদালত নির্বাচন করুন' : 'Select Court'}</option>`;
-                    if (!divisionId) return;
-
-                    // Use relative URL to avoid HTTP/HTTPS mismatch
-                    fetch(`/admin/divisions/${divisionId}/districts`)
-                        .then(res => res.json())
-                        .then(data => data.forEach(d => {
-                            const opt = document.createElement('option');
-                            opt.value = d.id;
-                            opt.textContent = locale === 'bn' ? d.name_bn : d.name_en;
-                            districtSelect.appendChild(opt);
-                        }))
-                        .catch(err => console.error('Error fetching districts:', err));
+        fetch(`/admin/divisions/${divisionId}/districts`)
+            .then(res => res.json())
+            .then(data => {
+                if (!Array.isArray(data)) data = [];
+                data.forEach(d => {
+                    const opt = document.createElement('option');
+                    opt.value = d.id;
+                    opt.textContent = locale === 'bn' ? d.name_bn : d.name_en;
+                    districtSelect.appendChild(opt);
                 });
+            })
+            .catch(err => console.error('Error fetching districts:', err));
+    });
 
-                districtSelect?.addEventListener('change', function() {
-                    const districtId = this.value;
-                    courtSelect.innerHTML =
-                        `<option value="">${locale === 'bn' ? 'আদালত নির্বাচন করুন' : 'Select Court'}</option>`;
-                    if (!districtId) return;
+    // --------------------------
+    // District -> Court
+    // --------------------------
+    districtSelect?.addEventListener('change', function() {
+        const districtId = this.value;
+        courtSelect.innerHTML = `<option value="">${locale === 'bn' ? 'আদালত নির্বাচন করুন' : 'Select Court'}</option>`;
+        if (!districtId) return;
 
-                    // Relative URL
-                    fetch(`/admin/districts/${districtId}/courts`)
-                        .then(res => res.json())
-                        .then(data => data.forEach(c => {
-                            const opt = document.createElement('option');
-                            opt.value = c.id;
-                            opt.textContent = locale === 'bn' ? c.name_bn : c.name_en;
-                            opt.dataset.nameBn = c.name_bn;
-                            opt.dataset.nameEn = c.name_en;
-                            courtSelect.appendChild(opt);
-                        }))
-                        .catch(err => console.error('Error fetching courts:', err));
+        fetch(`/admin/districts/${districtId}/courts`)
+            .then(res => res.json())
+            .then(data => {
+                if (!Array.isArray(data)) data = [];
+                data.forEach(c => {
+                    const opt = document.createElement('option');
+                    opt.value = c.id;
+                    opt.textContent = locale === 'bn' ? c.name_bn : c.name_en;
+                    courtSelect.appendChild(opt);
                 });
+            })
+            .catch(err => console.error('Error fetching courts:', err));
+    });
 
+    // --------------------------
+    // Witness table dynamic rows
+    // --------------------------
+    let rowIndex = 1;
+    function attachWitnessListeners() {
+        document.querySelectorAll('.witnessName').forEach(input => {
+            input.removeEventListener('input', updatePreview);
+            input.addEventListener('input', updatePreview);
+        });
+        setupPhoneInputConversion('.witnessPhone');
+    }
 
-                // Witness rows
-                let rowIndex = 1;
-                let isSubmitting = false;
+    document.getElementById('addRow')?.addEventListener('click', function() {
+        const tbody = document.querySelector('#witnessTable tbody');
+        tbody.insertAdjacentHTML('beforeend', `<tr>
+            <td><input type="text" name="witnesses[${rowIndex}][name]" class="form-control form-control-sm witnessName" required></td>
+            <td><input type="text" name="witnesses[${rowIndex}][phone]" class="form-control form-control-sm witnessPhone" required></td>
+            <td><button type="button" class="btn btn-danger btn-sm removeRow"><i class="bi bi-trash"></i></button></td>
+        </tr>`);
+        rowIndex++;
+        attachWitnessListeners();
+        updatePreview();
+    });
 
-                function attachWitnessListeners() {
-                    document.querySelectorAll('.witnessName').forEach(input => {
-                        input.removeEventListener('input', updatePreview);
-                        input.addEventListener('input', updatePreview);
-                    });
-                    setupPhoneInputConversion('.witnessPhone'); // always attach phone conversion
-                }
+    document.querySelector('#witnessTable')?.addEventListener('click', function(e) {
+        if (e.target.closest('.removeRow')) {
+            e.target.closest('tr').remove();
+            updatePreview();
+        }
+    });
 
-                document.getElementById('addRow').addEventListener('click', function() {
-                    const tbody = document.querySelector('#witnessTable tbody');
-                    tbody.insertAdjacentHTML('beforeend', `<tr>
-                <td><input type="text" name="witnesses[${rowIndex}][name]" class="form-control form-control-sm witnessName" required></td>
-                <td><input type="text" name="witnesses[${rowIndex}][phone]" class="form-control form-control-sm witnessPhone" required></td>
-                <td><button type="button" class="btn btn-danger btn-sm removeRow"><i class="bi bi-trash"></i></button></td>
-            </tr>`);
-                    rowIndex++;
-                    attachWitnessListeners();
-                    updatePreview();
-                });
-
-                document.querySelector('#witnessTable').addEventListener('click', function(e) {
-                    if (e.target.closest('.removeRow')) {
-                        e.target.closest('tr').remove();
-                        updatePreview();
-                    }
-                });
-
-                // Preview using static template ID 1
-                const template = @json($templates->firstWhere('id', 1));
-                const lang = 'bn';
-
-                function formatAMPM(time24) {
-                    if (!time24) return '';
-                    let [h, m] = time24.split(':').map(Number);
-                    const ampm = h >= 12 ? 'PM' : 'AM';
-                    h = h % 12 || 12;
-                    return `${h}:${m.toString().padStart(2,'0')} ${ampm}`;
-                }
-
-                // -------------------------
-                // NEW FUNCTION: Convert date to Bangla numerals
-                function toBanglaDate(dateStr) {
-                    if (!dateStr) return '';
-                    const banglaDigits = ['০', '১', '২', '৩', '৪', '৫', '৬', '৭', '৮', '৯'];
-                    return dateStr.replace(/\d/g, d => banglaDigits[d]);
-                }
-
-                // NEW FUNCTION: Convert Bangla digits in phone input to English
-                function setupPhoneInputConversion(selector) {
-                    const banglaToEnglish = {
-                        '০': '0',
-                        '১': '1',
-                        '২': '2',
-                        '৩': '3',
-                        '৪': '4',
-                        '৫': '5',
-                        '৬': '6',
-                        '৭': '7',
-                        '৮': '8',
-                        '৯': '9'
-                    };
-                    const inputs = document.querySelectorAll(selector);
-                    inputs.forEach(input => {
-                        input.addEventListener('input', function() {
-                            let value = this.value;
-                            value = value.replace(/[০-৯]/g, d => banglaToEnglish[d]);
-                            value = value.replace(/\D/g, '');
-                            this.value = value;
-                        });
-                    });
-                }
-                // -------------------------
-
-                function updatePreview() {
-                    if (!template) {
-                        document.getElementById('previewMessage').innerHTML = 'Template not found.';
-                        return;
-                    }
-
-                    const caseNo = document.getElementById('caseNo').value || '';
-                    const date = document.getElementById('hearingDate').value || '';
-                    const courtName = courtSelect.options[courtSelect.selectedIndex]?.text || '';
-                    const banglaDate = toBanglaDate(date);
-                    let html = '';
-
-                    document.querySelectorAll('.witnessName').forEach((input, idx) => {
-                        const name = input.value.trim();
-                        if (!name) return;
-
-                        let msgSMS = lang === 'en' ? template.body_en_sms : template.body_bn_sms;
-                        let msgWA = lang === 'en' ? template.body_en_whatsapp : template.body_bn_whatsapp;
-
-                        msgSMS = msgSMS.replace(/{witness_name}/g, name)
-                            .replace(/{hearing_date}/g, banglaDate)
-                            .replace(/{court_name}/g, courtName)
-                            .replace(/{case_no}/g, caseNo);
-
-                        msgWA = msgWA.replace(/{witness_name}/g, name)
-                            .replace(/{hearing_date}/g, banglaDate)
-                            .replace(/{court_name}/g, courtName)
-                            .replace(/{case_no}/g, caseNo);
-
-                        if (template.channel === 'both') {
-                            html += `<strong>Witness ${idx+1} - SMS:</strong> ${msgSMS}<br>`;
-                            html += `<strong>Witness ${idx+1} - WhatsApp:</strong> ${msgWA}<br><br>`;
-                        } else if (template.channel === 'sms') {
-                            html += `<strong>Witness ${idx+1} - SMS:</strong> ${msgSMS}<br><br>`;
-                        } else if (template.channel === 'whatsapp') {
-                            html += `<strong>Witness ${idx+1} - WhatsApp:</strong> ${msgWA}<br><br>`;
-                        }
-                    });
-
-                    document.getElementById('previewMessage').innerHTML = html || 'Enter details to see preview.';
-                }
-
-                attachWitnessListeners();
-
-                ['input', 'change'].forEach(evt => {
-                    document.getElementById('caseNo').addEventListener(evt, updatePreview);
-                    document.getElementById('hearingDate').addEventListener(evt, updatePreview);
-                    const timeInput = document.querySelector('input[name="hearing_time"]');
-                    if (timeInput) timeInput.addEventListener(evt, updatePreview);
-                    document.querySelector('#witnessTable').addEventListener(evt, updatePreview);
-                });
-
-                document.getElementById('caseForm').addEventListener('submit', function(e) {
-                    e.preventDefault();
-                    if (isSubmitting) return;
-
-                    const formData = new FormData(this);
-                    if (!formData.get('division_id') || !formData.get('district_id') || !formData.get(
-                            'court_id')) {
-                        Swal.fire('Error', 'Please select Division, District, and Court.', 'error');
-                        return;
-                    }
-
-                    const phoneInputs = document.querySelectorAll('.witnessPhone');
-                    for (const inp of phoneInputs) {
-                        const val = inp.value.trim();
-                        if (!/^(01)\d{9}$/.test(val)) {
-                            Swal.fire('Error', 'Phone number must be 11 digits, start with 01, and numeric.',
-                                'error');
-                            inp.focus();
-                            return;
-                        }
-                    }
-
-                    if (document.querySelectorAll('input[name="schedules[]"]:checked').length === 0) {
-                        Swal.fire('Error', 'Please select at least one schedule.', 'error');
-                        return;
-                    }
-
-                    isSubmitting = true;
-                    const btn = document.getElementById('submitBtn');
-                    btn.disabled = true;
-                    const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute(
-                        'content') || document.querySelector('input[name="_token"]')?.value || '';
-
-                    fetch("{{ route('admin.cases.store_send') }}", {
-                            method: 'POST',
-                            credentials: 'same-origin',
-                            headers: {
-                                'X-CSRF-TOKEN': csrfToken,
-                                'X-Requested-With': 'XMLHttpRequest',
-                                'Accept': 'application/json'
-                            },
-                            body: formData,
-                            redirect: 'follow'
-                        })
-                        .then(async res => {
-                            if (res.redirected) {
-                                Swal.fire('Error', 'Session expired. Please login.', 'error').then(() =>
-                                    window.location.href = "{{ route('login') }}"
-                                );
-                                throw new Error('Redirected');
-                            }
-                            let data;
-                            try {
-                                data = await res.json();
-                            } catch (err) {
-                                const text = await res.text();
-                                throw new Error(text || 'Invalid JSON');
-                            }
-
-                            if (data.success) {
-                                Swal.fire('Success', data.message, 'success');
-                                this.reset();
-                                document.getElementById('previewMessage').innerHTML =
-                                    'Enter details to see preview.';
-                                rowIndex = 1;
-                                document.querySelector('#witnessTable tbody').innerHTML = `<tr>
-                        <td><input type="text" name="witnesses[0][name]" class="form-control form-control-sm witnessName" required></td>
-                        <td><input type="text" name="witnesses[0][phone]" class="form-control form-control-sm witnessPhone" required></td>
-                        <td><button type="button" class="btn btn-danger btn-sm removeRow"><i class="bi bi-trash"></i></button></td>
-                    </tr>`;
-                                attachWitnessListeners();
-                            } else Swal.fire('Error', data.message || 'Something went wrong', 'error');
-                        })
-                        .catch(err => {
-                            Swal.fire('Error', err.message || 'Something went wrong', 'error');
-                        })
-                        .finally(() => {
-                            btn.disabled = false;
-                            isSubmitting = false;
-                        });
-
-                });
-
+    // --------------------------
+    // Convert Bangla digits in phone input to English
+    // --------------------------
+    function setupPhoneInputConversion(selector) {
+        const banglaToEnglish = { '০':'0','১':'1','২':'2','৩':'3','৪':'4','৫':'5','৬':'6','৭':'7','৮':'8','৯':'9' };
+        document.querySelectorAll(selector).forEach(input => {
+            input.addEventListener('input', function() {
+                let value = this.value.replace(/[০-৯]/g, d => banglaToEnglish[d]).replace(/\D/g,'');
+                this.value = value;
             });
-        </script>
-    @endpush
+        });
+    }
 
+    // --------------------------
+    // Convert date to Bangla numerals
+    // --------------------------
+    function toBanglaDate(dateStr) {
+        if (!dateStr) return '';
+        const banglaDigits = ['০','১','২','৩','৪','৫','৬','৭','৮','৯'];
+        return dateStr.replace(/\d/g, d => banglaDigits[d]);
+    }
+
+    // --------------------------
+    // Preview update logic
+    // --------------------------
+    function updatePreview() {
+        const template = @json($templates->firstWhere('id', 1));
+        const lang = locale;
+        if (!template) return document.getElementById('previewMessage').innerHTML = 'Template not found.';
+
+        const caseNo = document.getElementById('caseNo')?.value || '';
+        const date = document.getElementById('hearingDate')?.value || '';
+        const courtName = courtSelect.options[courtSelect.selectedIndex]?.text || '';
+        const banglaDate = toBanglaDate(date);
+        let html = '';
+
+        document.querySelectorAll('.witnessName').forEach((input, idx) => {
+            const name = input.value.trim();
+            if (!name) return;
+
+            let msgSMS = lang === 'en' ? template.body_en_sms : template.body_bn_sms;
+            let msgWA = lang === 'en' ? template.body_en_whatsapp : template.body_bn_whatsapp;
+
+            msgSMS = msgSMS.replace(/{witness_name}/g, name)
+                           .replace(/{hearing_date}/g, banglaDate)
+                           .replace(/{court_name}/g, courtName)
+                           .replace(/{case_no}/g, caseNo);
+
+            msgWA = msgWA.replace(/{witness_name}/g, name)
+                         .replace(/{hearing_date}/g, banglaDate)
+                         .replace(/{court_name}/g, courtName)
+                         .replace(/{case_no}/g, caseNo);
+
+            if (template.channel === 'both') {
+                html += `<strong>Witness ${idx+1} - SMS:</strong> ${msgSMS}<br>`;
+                html += `<strong>Witness ${idx+1} - WhatsApp:</strong> ${msgWA}<br><br>`;
+            } else if (template.channel === 'sms') {
+                html += `<strong>Witness ${idx+1} - SMS:</strong> ${msgSMS}<br><br>`;
+            } else if (template.channel === 'whatsapp') {
+                html += `<strong>Witness ${idx+1} - WhatsApp:</strong> ${msgWA}<br><br>`;
+            }
+        });
+
+        document.getElementById('previewMessage').innerHTML = html || 'Enter details to see preview.';
+    }
+
+    attachWitnessListeners();
+    ['input','change'].forEach(evt => {
+        document.getElementById('caseNo')?.addEventListener(evt, updatePreview);
+        document.getElementById('hearingDate')?.addEventListener(evt, updatePreview);
+        document.querySelector('#witnessTable')?.addEventListener(evt, updatePreview);
+    });
+
+    // --------------------------
+    // Form submission
+    // --------------------------
+    let isSubmitting = false;
+    document.getElementById('caseForm')?.addEventListener('submit', function(e) {
+        e.preventDefault();
+        if (isSubmitting) return;
+
+        const formData = new FormData(this);
+        if (!formData.get('division_id') || !formData.get('district_id') || !formData.get('court_id')) {
+            Swal.fire('Error','Please select Division, District, and Court.','error'); return;
+        }
+
+        const phoneInputs = document.querySelectorAll('.witnessPhone');
+        for (const inp of phoneInputs) {
+            const val = inp.value.trim();
+            if (!/^(01)\d{9}$/.test(val)) {
+                Swal.fire('Error','Phone number must be 11 digits, start with 01, and numeric.','error');
+                inp.focus(); return;
+            }
+        }
+
+        if (document.querySelectorAll('input[name="schedules[]"]:checked').length === 0) {
+            Swal.fire('Error','Please select at least one schedule.','error'); return;
+        }
+
+        isSubmitting = true;
+        const btn = document.getElementById('submitBtn');
+        btn.disabled = true;
+        const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '';
+
+        fetch("{{ route('admin.cases.store_send') }}", {
+            method: 'POST',
+            headers: { 'X-CSRF-TOKEN': csrfToken, 'Accept':'application/json' },
+            body: formData
+        }).then(async res => {
+            let data = await res.json().catch(async ()=>{ throw new Error(await res.text()) });
+            if (data.success) {
+                Swal.fire('Success', data.message, 'success');
+                this.reset();
+                document.getElementById('previewMessage').innerHTML = 'Enter details to see preview.';
+                rowIndex = 1;
+                document.querySelector('#witnessTable tbody').innerHTML = `<tr>
+                    <td><input type="text" name="witnesses[0][name]" class="form-control form-control-sm witnessName" required></td>
+                    <td><input type="text" name="witnesses[0][phone]" class="form-control form-control-sm witnessPhone" required></td>
+                    <td><button type="button" class="btn btn-danger btn-sm removeRow"><i class="bi bi-trash"></i></button></td>
+                </tr>`;
+                attachWitnessListeners();
+            } else Swal.fire('Error', data.message || 'Something went wrong','error');
+        }).catch(err => Swal.fire('Error', err.message || 'Something went wrong','error'))
+        .finally(()=>{ btn.disabled = false; isSubmitting = false; });
+    });
+
+});
+</script>
+@endpush
 
 
 @endsection

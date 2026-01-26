@@ -25,28 +25,75 @@ class UserController extends Controller
         $this->middleware('permission:View User Permissions')->only(['destroy']);
     }
 
-    public function index()
+    public function index(Request $request)
     {
         $loggedInUser = Auth::user();
 
+        $query = User::with('roles', 'permissions');
+
+        // ================= ROLE VISIBILITY RULES (UNCHANGED) =================
         if ($loggedInUser->hasRole('Super Admin')) {
-            // Super Admin sees all users
-            $users = User::with('roles', 'permissions')->get();
+            // see all
         } elseif (is_null($loggedInUser->district_id)) {
-            // Ministry-level user sees all except Super Admins
-            $users = User::with('roles', 'permissions')
-                ->whereDoesntHave('roles', fn($q) => $q->where('name', 'Super Admin'))
-                ->get();
+            $query->whereDoesntHave('roles', fn($q) => $q->where('name', 'Super Admin'));
         } else {
-            // District-level admin sees only users in their district, excluding Super Admins
-            $users = User::with('roles', 'permissions')
-                ->where('district_id', $loggedInUser->district_id)
-                ->whereDoesntHave('roles', fn($q) => $q->where('name', 'Super Admin'))
-                ->get();
+            $query->where('district_id', $loggedInUser->district_id)
+                ->whereDoesntHave('roles', fn($q) => $q->where('name', 'Super Admin'));
         }
 
-        return view('admin.rbac.users.index', compact('users'));
+        // ================= FILTERS =================
+
+        // Search (name / email / phone)
+        if ($request->filled('q')) {
+            $query->where(function ($q) use ($request) {
+                $q->where('name', 'like', "%{$request->q}%")
+                    ->orWhere('email', 'like', "%{$request->q}%")
+                    ->orWhere('phone_number', 'like', "%{$request->q}%");
+            });
+        }
+
+        // Role
+        if ($request->filled('role')) {
+            $query->whereHas(
+                'roles',
+                fn($q) =>
+                $q->where('name', $request->role)
+            );
+        }
+
+        // Status
+        if ($request->filled('status')) {
+            $query->where('is_active', $request->status === 'active');
+        }
+
+        // Division → District → Court
+        $query->when(
+            $request->division_id,
+            fn($q) =>
+            $q->where('division_id', $request->division_id)
+        );
+
+        $query->when(
+            $request->district_id,
+            fn($q) =>
+            $q->where('district_id', $request->district_id)
+        );
+
+        $query->when(
+            $request->court_id,
+            fn($q) =>
+            $q->where('court_id', $request->court_id)
+        );
+
+        $users = $query->latest()->paginate(24)->withQueryString();
+
+        // Filter data
+        $roles = Role::where('name', '!=', 'Super Admin')->get();
+        $divisions = Division::with('districts.courts')->get();
+
+        return view('admin.rbac.users.index', compact('users', 'roles', 'divisions'));
     }
+
 
     public function create()
     {

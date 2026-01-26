@@ -63,4 +63,6 @@ return [
 
     // Reschedule
     'reschedule'             => 'পুনঃনির্ধারণ',
+    'both'                   => 'উভয়',
+    'type_of_witness'        => 'সাক্ষীর ধরণ',
 ];

@@ -100,8 +100,10 @@ class HearingManagementController extends Controller
             'attendance' => 'required|array',
             'gender' => 'array',
             'others_info' => 'array',
+            'type_of_witness' => 'array', // new field
             'sms_seen' => 'array',
             'witness_heard' => 'array',
+            'remarks' => 'array',
         ]);
 
         $hearing = CaseHearing::with('witnesses')->findOrFail($hearingId);
@@ -113,7 +115,8 @@ class HearingManagementController extends Controller
                 Witness::where('id', $witnessId)->update([
                     'appeared_status' => $status,
                     'gender' => $request->gender[$witnessId] ?? null,
-                    'others_info' => $request->others_info[$witnessId] ?? null,
+                    'others_info' => $request->others_info[$witnessId] ?? null, // now can be 'Both'
+                    'type_of_witness' => $request->type_of_witness[$witnessId] ?? null, // new field
                     'sms_seen' => isset($request->sms_seen[$witnessId]) ? 'yes' : 'no',
                     'witness_heard' => isset($request->witness_heard[$witnessId]) ? 'yes' : 'no',
                     'remarks' => $request->remarks[$witnessId] ?? null,
@@ -125,6 +128,7 @@ class HearingManagementController extends Controller
             ->route('admin.hearings.index')
             ->with('success', 'Attendance saved successfully.');
     }
+
 
     public function rescheduleForm(Request $request, $hearingId)
     {

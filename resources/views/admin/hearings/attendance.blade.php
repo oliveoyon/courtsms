@@ -25,6 +25,7 @@
                                 <th>{{ __('case.attendance') }}</th>
                                 <th>{{ __('case.gender') }}</th>
                                 <th>{{ __('case.others_info') }}</th>
+                                <th>{{ __('case.type_of_witness') }}</th>
                                 <th class="text-center">{{ __('case.sms_seen') }}</th>
                                 <th class="text-center">{{ __('case.witness_heard') }}</th>
                                 <th>{{ __('case.remarks') }}</th>
@@ -43,20 +44,16 @@
                                     {{-- Attendance --}}
                                     <td>
                                         <select name="attendance[{{ $witness->id }}]" class="form-select form-select-sm">
-                                            <option value="appeared"
-                                                {{ $witness->appeared_status === 'appeared' ? 'selected' : '' }}>
+                                            <option value="appeared" {{ $witness->appeared_status === 'appeared' ? 'selected' : '' }}>
                                                 {{ __('case.appeared') }}
                                             </option>
-                                            <option value="absent"
-                                                {{ $witness->appeared_status === 'absent' ? 'selected' : '' }}>
+                                            <option value="absent" {{ $witness->appeared_status === 'absent' ? 'selected' : '' }}>
                                                 {{ __('case.not_appeared') }}
                                             </option>
-                                            <option value="excused"
-                                                {{ $witness->appeared_status === 'excused' ? 'selected' : '' }}>
+                                            <option value="excused" {{ $witness->appeared_status === 'excused' ? 'selected' : '' }}>
                                                 {{ __('case.excused') }}
                                             </option>
-                                            <option value="pending"
-                                                {{ $witness->appeared_status === 'pending' ? 'selected' : '' }}>
+                                            <option value="pending" {{ $witness->appeared_status === 'pending' ? 'selected' : '' }}>
                                                 {{ __('case.pending') }}
                                             </option>
                                         </select>
@@ -72,8 +69,7 @@
                                             <option value="Male" {{ $witness->gender === 'Male' ? 'selected' : '' }}>
                                                 {{ __('case.male') }}
                                             </option>
-                                            <option value="Third Gender"
-                                                {{ $witness->gender === 'Third Gender' ? 'selected' : '' }}>
+                                            <option value="Third Gender" {{ $witness->gender === 'Third Gender' ? 'selected' : '' }}>
                                                 {{ __('case.third_gender') }}
                                             </option>
                                         </select>
@@ -83,17 +79,29 @@
                                     <td>
                                         <select name="others_info[{{ $witness->id }}]" class="form-select form-select-sm">
                                             <option value="">-- {{ __('case.none') }} --</option>
-                                            <option value="Under 18"
-                                                {{ $witness->others_info === 'Under 18' ? 'selected' : '' }}>
+                                            <option value="Under 18" {{ $witness->others_info === 'Under 18' ? 'selected' : '' }}>
                                                 {{ __('case.under_18') }}
                                             </option>
-                                            <option value="Person with Disability"
-                                                {{ $witness->others_info === 'Person with Disability' ? 'selected' : '' }}>
+                                            <option value="Person with Disability" {{ $witness->others_info === 'Person with Disability' ? 'selected' : '' }}>
                                                 {{ __('case.person_with_disability') }}
+                                            </option>
+                                            <option value="Both" {{ $witness->others_info === 'Both' ? 'selected' : '' }}>
+                                                {{ __('case.both') }}
                                             </option>
                                         </select>
                                     </td>
 
+                                    {{-- Type of Witness --}}
+                                    <td>
+                                        <select name="type_of_witness[{{ $witness->id }}]" class="form-select form-select-sm">
+                                            <option value="">-- {{ __('case.select') }} --</option>
+                                            <option value="IO" {{ $witness->type_of_witness === 'IO' ? 'selected' : '' }}>IO</option>
+                                            <option value="MO" {{ $witness->type_of_witness === 'MO' ? 'selected' : '' }}>MO</option>
+                                            <option value="DNC" {{ $witness->type_of_witness === 'DNC' ? 'selected' : '' }}>DNC</option>
+                                            <option value="General" {{ $witness->type_of_witness === 'General' ? 'selected' : '' }}>General</option>
+                                            <option value="Others" {{ $witness->type_of_witness === 'Others' ? 'selected' : '' }}>Others</option>
+                                        </select>
+                                    </td>
 
                                     {{-- SMS Seen --}}
                                     <td class="text-center">
