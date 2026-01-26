@@ -178,17 +178,7 @@ class CourtCaseController extends Controller
 
                         $isSent = isset($smsResponse['response_code'])
                             && $smsResponse['response_code'] == 200;
-                        /* ===================================================== */
-
-                        /* =====================================================
-                         * 🟡 FAKE SMS SUCCESS (TEMPORARY)
-                         * ===================================================== */
-                        // $isSent = true;
-                        // $smsResponse = [
-                        //     'response_code' => 200,
-                        //     'response' => 'FAKE SMS SUCCESS (DEV MODE)'
-                        // ];
-                        /* ===================================================== */
+                        
 
                         Notification::where('schedule_id', $schedule->id)
                             ->where('witness_id', $witness->id)
