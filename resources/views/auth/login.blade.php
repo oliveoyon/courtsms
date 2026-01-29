@@ -61,7 +61,6 @@
             opacity: 0.8;
             cursor: not-allowed;
         }
-
     </style>
 </head>
 <body>
@@ -82,12 +81,19 @@
     <form method="POST" action="{{ route('login') }}" onsubmit="handleLoginSubmit(event)">
         @csrf
 
-        <!-- Email -->
+        <!-- Name or Email -->
         <div class="mb-3">
-            <label for="email" class="form-label">Email Address</label>
-            <input type="email" id="email" name="email" class="form-control @error('email') is-invalid @enderror"
-                   value="{{ old('email') }}" placeholder="Enter your email" required autofocus>
-            @error('email')
+            <label for="login" class="form-label">Name or Email</label>
+            <input type="text"
+                   id="login"
+                   name="login"
+                   class="form-control @error('login') is-invalid @enderror"
+                   value="{{ old('login') }}"
+                   placeholder="Enter your name or email"
+                   required
+                   autofocus>
+
+            @error('login')
                 <div class="invalid-feedback">{{ $message }}</div>
             @enderror
         </div>
@@ -95,8 +101,13 @@
         <!-- Password -->
         <div class="mb-3">
             <label for="password" class="form-label">Password</label>
-            <input type="password" id="password" name="password" class="form-control @error('password') is-invalid @enderror"
-                   placeholder="Enter your password" required>
+            <input type="password"
+                   id="password"
+                   name="password"
+                   class="form-control @error('password') is-invalid @enderror"
+                   placeholder="Enter your password"
+                   required>
+
             @error('password')
                 <div class="invalid-feedback">{{ $message }}</div>
             @enderror
@@ -104,7 +115,11 @@
 
         <!-- Remember Me -->
         <div class="mb-3 form-check">
-            <input type="checkbox" class="form-check-input" id="remember" name="remember" {{ old('remember') ? 'checked' : '' }}>
+            <input type="checkbox"
+                   class="form-check-input"
+                   id="remember"
+                   name="remember"
+                   {{ old('remember') ? 'checked' : '' }}>
             <label class="form-check-label" for="remember">Remember Me</label>
         </div>
 
@@ -124,7 +139,7 @@
 <!-- Bootstrap JS -->
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 
-<!-- Optional JS to disable button and show spinner -->
+<!-- Disable button + spinner -->
 <script>
     function handleLoginSubmit(event) {
         const loginButton = document.getElementById('loginButton');
