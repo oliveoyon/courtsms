@@ -34,6 +34,13 @@ class SendSmsJob implements ShouldQueue
     protected int $maxAttempts = 3;
 
     /**
+     * Allowed sending window (Dhaka time)
+     */
+    protected string $tz = 'Asia/Dhaka';
+    protected int $sendStartHour = 8;   // morning start (08:00)
+    protected int $sendEndHour   = 22;  // end at 22:00 (10 PM)
+
+    /**
      * Create a new job instance.
      * Accepts Notification model or array of IDs
      *
@@ -53,6 +60,29 @@ class SendSmsJob implements ShouldQueue
      */
     public function handle(): void
     {
+        // ✅ Time-window guard: do NOT send outside 08:00–22:00 Dhaka
+        $now = now($this->tz);
+        $start = $now->copy()->setTime($this->sendStartHour, 0);
+        $end   = $now->copy()->setTime($this->sendEndHour, 0);
+
+        if ($now->lt($start) || $now->gte($end)) {
+            // Delay job until next allowed time
+            $next = $now->lt($start)
+                ? $start
+                : $now->copy()->addDay()->setTime($this->sendStartHour, 0);
+
+	    $delaySeconds = max(60, $now->diffInSeconds($next));
+            Log::info('SMS job delayed due to time window', [
+                'now' => $now->toDateTimeString(),
+                'next' => $next->toDateTimeString(),
+                'delay_seconds' => $delaySeconds,
+                'notification_ids_count' => count($this->notificationIds),
+            ]);
+
+            $this->release($delaySeconds);
+            return;
+        }
+
         $notificationChunks = array_chunk($this->notificationIds, $this->batchSize);
 
         foreach ($notificationChunks as $chunk) {
@@ -81,7 +111,12 @@ class SendSmsJob implements ShouldQueue
      */
     protected function prepareMessage(Notification $notification): ?array
     {
-        $witness  = $notification->witness;
+      if ($notification->status === 'sent') {
+        return null;
+    } 
+
+
+ $witness  = $notification->witness;
         $schedule = $notification->schedule;
         $hearing  = $schedule?->hearing;
         $case     = $hearing?->case;
@@ -90,6 +125,24 @@ class SendSmsJob implements ShouldQueue
 
         if (!$witness || !$schedule || !$hearing || !$case || !$court || !$template) {
             Log::error('SMS aborted – missing relation', ['notification_id' => $notification->id]);
+            return null;
+        }
+
+        // ✅ Extra safety: do not send if hearing date already passed
+        try {
+            $hearingDt = Carbon::parse($hearing->hearing_date, $this->tz);
+            if ($hearingDt->lt(now($this->tz)->startOfDay())) {
+                $notification->update([
+                    'status' => 'cancelled',
+                    'response' => 'Hearing date passed; cancelled automatically.',
+                ]);
+                return null;
+            }
+        } catch (\Throwable $e) {
+            Log::error('Invalid hearing date', [
+                'notification_id' => $notification->id,
+                'value' => $hearing->hearing_date,
+            ]);
             return null;
         }
 
@@ -105,9 +158,9 @@ class SendSmsJob implements ShouldQueue
 
         try {
             $hearingDate = Carbon::parse($hearing->hearing_date)->format('d-m-Y');
-            $hearingDate = $this->toBanglaNumber($hearingDate); // Convert digits to Bangla
+            $hearingDate = $this->toBanglaNumber($hearingDate);
         } catch (\Throwable $e) {
-            Log::error('Invalid hearing date', ['notification_id' => $notification->id, 'value' => $hearing->hearing_date]);
+            Log::error('Invalid hearing date formatting', ['notification_id' => $notification->id, 'value' => $hearing->hearing_date]);
             return null;
         }
 
@@ -136,7 +189,7 @@ class SendSmsJob implements ShouldQueue
     {
         if (!$phone) return null;
 
-        $phone = preg_replace('/\D/', '', $phone); // remove non-digits
+        $phone = preg_replace('/\D/', '', $phone);
 
         if (str_starts_with($phone, '0') && strlen($phone) === 11) {
             return '88' . $phone;
@@ -144,7 +197,7 @@ class SendSmsJob implements ShouldQueue
             return $phone;
         }
 
-        return null; // invalid
+        return null;
     }
 
     /**
@@ -168,12 +221,13 @@ class SendSmsJob implements ShouldQueue
         foreach ($messages as $msg) {
             $attempt = 0;
             $success = false;
+            $resp = null;
 
             while ($attempt < $this->maxAttempts && !$success) {
                 $attempt++;
 
                 try {
-                    $response = $smsService->send([[ 
+                    $response = $smsService->send([[
                         'to' => $msg['to'],
                         'message' => $msg['message'],
                     ]]);
@@ -188,10 +242,11 @@ class SendSmsJob implements ShouldQueue
                             'response' => json_encode($resp),
                             'sent_at' => now(),
                         ];
+			
+			usleep(200000);
                         break;
                     }
 
-                    // Token expired handling
                     if (($resp['response_code'] ?? null) === 401) {
                         Log::warning('Access token expired, refreshing...', ['notification_id' => $msg['notification_id']]);
                         $smsService->refreshToken();
@@ -220,13 +275,12 @@ class SendSmsJob implements ShouldQueue
                 $updateBatch[] = [
                     'id' => $msg['notification_id'],
                     'status' => 'failed',
-                    'response' => isset($resp) ? json_encode($resp) : 'Unknown error',
+                    'response' => $resp ? json_encode($resp) : 'Unknown error',
                     'sent_at' => null,
                 ];
             }
         }
 
-        // Safe DB update
         foreach (array_chunk($updateBatch, 50) as $dbChunk) {
             foreach ($dbChunk as $item) {
                 try {
