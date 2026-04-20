@@ -10,26 +10,43 @@ use Illuminate\Support\Facades\Auth;
 
 class AnalyticsController extends Controller
 {
+    protected function scopedDivisions($user)
+    {
+        if ($user->court_id) {
+            return Division::with([
+                'districts' => fn($q) => $q->where('id', $user->district_id),
+                'districts.courts' => fn($q) => $q->where('id', $user->court_id),
+            ])->where('id', $user->division_id)->get();
+        }
+
+        if ($user->district_id) {
+            return Division::with([
+                'districts' => fn($q) => $q->where('id', $user->district_id),
+                'districts.courts'
+            ])->where('id', $user->division_id)->get();
+        }
+
+        if ($user->division_id) {
+            return Division::with('districts.courts')->where('id', $user->division_id)->get();
+        }
+
+        return Division::with('districts.courts')->get();
+    }
+
     public function overview()
     {
         $user = Auth::user();
-
-        // Dependent loading: restrict dropdowns if user has division/district
-        $divisions = $user->district_id
-            ? Division::with([
-                'districts' => fn($q) => $q->where('id', $user->district_id),
-                'districts.courts'
-            ])->get()
-            : Division::with('districts.courts')->get();
+        $divisions = $this->scopedDivisions($user);
 
         return view('admin.analytics.overview', compact('divisions', 'user'));
     }
 
     public function smsSummary(Request $request)
     {
-        $divisionId   = $request->query('division_id');
-        $districtId   = $request->query('district_id');
-        $courtId      = $request->query('court_id');
+        $user = Auth::user();
+        $divisionId   = $user->division_id ?: $request->query('division_id');
+        $districtId   = $user->district_id ?: $request->query('district_id');
+        $courtId      = $user->court_id ?: $request->query('court_id');
         $fromDate     = $request->query('from_date');
         $toDate       = $request->query('to_date');
         $status       = $request->query('status');        // sent/pending/failed

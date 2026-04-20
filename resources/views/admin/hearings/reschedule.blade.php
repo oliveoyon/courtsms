@@ -94,6 +94,7 @@
                     <input type="checkbox" class="btn-check" name="schedules[]" id="schedNow" value="send_now">
                     <label class="btn btn-outline-success btn-sm" for="schedNow">{{ __('case.send_now') }}</label>
                 </div>
+                <small id="sendNowHelp" class="d-block mt-2 text-muted"></small>
             </div>
 
             {{-- Preview --}}
@@ -118,6 +119,17 @@ document.addEventListener('DOMContentLoaded', function () {
 
     let rowIndex = {{ $hearing->case->witnesses->count() }};
     let isSubmitting = false;
+    const newDateInput = document.querySelector('[name="new_date"]');
+    const sendNowCheckbox = document.getElementById('schedNow');
+    const sendNowLabel = document.querySelector('label[for="schedNow"]');
+    const sendNowHelp = document.getElementById('sendNowHelp');
+    const locale = '{{ app()->getLocale() }}';
+    const sendNowActiveText = locale === 'bn'
+        ? 'Send Now শুধু আজ থেকে পরবর্তী ৩ দিনের শুনানির জন্য চালু থাকবে।'
+        : 'Send Now is available only when the hearing date is within the next 3 days.';
+    const sendNowDisabledText = locale === 'bn'
+        ? 'নির্বাচিত শুনানির তারিখ ৩ দিনের সীমার বাইরে, তাই Send Now বন্ধ আছে।'
+        : 'Send Now is disabled because the selected hearing date is outside the next 3 days.';
 
     // Add witness row
     document.getElementById('addRow').addEventListener('click', function () {
@@ -165,7 +177,7 @@ document.addEventListener('DOMContentLoaded', function () {
     }
 
     function updatePreview() {
-        const date = document.querySelector('[name="new_date"]').value;
+        const date = newDateInput.value;
         let html = '';
 
         document.querySelectorAll('.witnessName').forEach((i, idx) => {
@@ -179,8 +191,36 @@ document.addEventListener('DOMContentLoaded', function () {
             html || '{{ __('case.enter_preview') }}';
     }
 
+    function updateSendNowState() {
+        const value = newDateInput.value;
+        let allowed = false;
+
+        if (value) {
+            const selected = new Date(`${value}T00:00:00`);
+            const today = new Date();
+            today.setHours(0, 0, 0, 0);
+            const maxDate = new Date(today);
+            maxDate.setDate(maxDate.getDate() + 3);
+            allowed = selected >= today && selected <= maxDate;
+        }
+
+        sendNowCheckbox.disabled = !allowed;
+        sendNowLabel.classList.toggle('disabled', !allowed);
+        sendNowLabel.classList.toggle('opacity-50', !allowed);
+        sendNowLabel.classList.toggle('btn-outline-secondary', !allowed);
+        sendNowLabel.classList.toggle('btn-outline-success', allowed);
+        sendNowHelp.textContent = allowed ? sendNowActiveText : sendNowDisabledText;
+
+        if (!allowed) {
+            sendNowCheckbox.checked = false;
+        }
+    }
+
     attachListeners();
-    document.querySelector('[name="new_date"]').addEventListener('input', updatePreview);
+    newDateInput.addEventListener('input', updatePreview);
+    newDateInput.addEventListener('input', updateSendNowState);
+    newDateInput.addEventListener('change', updateSendNowState);
+    updateSendNowState();
 
     // FINAL SUBMIT HANDLER (ONLY ONE)
     document.getElementById('rescheduleForm').addEventListener('submit', function (e) {

@@ -2,6 +2,7 @@
 
 return [
     'court_sms_dashboard'           => 'Court SMS Dashboard',
+    'court_sms_reports'             => 'Court SMS Reports',
     'division'                      => 'Division',
     'district'                      => 'District',
     'court'                         => 'Court',
@@ -19,6 +20,7 @@ return [
     'failed'                          => 'Failed',
     'witness_appeared'                => 'Witness Appeared',
     'cases_rescheduled'               => 'Cases Rescheduled',
+    'rescheduled_cases'               => 'Rescheduled Cases',
     'appeared'                        => 'Appeared',
     'not_appeared'                    => 'Not Appeared',
     'sms_status_distribution'         => 'SMS Status Distribution',

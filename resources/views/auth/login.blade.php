@@ -141,6 +141,20 @@
 
 <!-- Disable button + spinner -->
 <script>
+    function resetLoginButtonState() {
+        const loginButton = document.getElementById('loginButton');
+        const btnText = document.getElementById('btnText');
+        const btnSpinner = document.getElementById('btnSpinner');
+
+        if (!loginButton || !btnText || !btnSpinner) {
+            return;
+        }
+
+        loginButton.disabled = false;
+        btnText.textContent = 'Login';
+        btnSpinner.classList.add('d-none');
+    }
+
     function handleLoginSubmit(event) {
         const loginButton = document.getElementById('loginButton');
         const btnText = document.getElementById('btnText');
@@ -150,6 +164,9 @@
         btnText.textContent = 'Logging in...';
         btnSpinner.classList.remove('d-none');
     }
+
+    document.addEventListener('DOMContentLoaded', resetLoginButtonState);
+    window.addEventListener('pageshow', resetLoginButtonState);
 </script>
 
 </body>

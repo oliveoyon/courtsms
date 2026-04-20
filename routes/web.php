@@ -74,6 +74,8 @@ Route::prefix('admin')->name('admin.')->middleware(['auth'])->group(function () 
     Route::get('analytics/sms-summary', [AnalyticsController::class, 'smsSummary'])->name('analytics.sms.summary');
     Route::get('reports/court-sms-dashboard', [CourtSmsReportController::class, 'index'])->name('reports.court_sms_dashboard');
     Route::get('reports/court-sms-dashboard/data', [CourtSmsReportController::class, 'getMetrics'])->name('reports.court_sms_dashboard.data');
+    Route::get('reports/detailed', [CourtSmsReportController::class, 'detailedReports'])->name('reports.detailed');
+    Route::get('reports/court-sms-dashboard/report/{type}', [CourtSmsReportController::class, 'showReport'])->name('reports.court_sms_dashboard.report');
 
     // SMS Testing
     Route::get('/test-sms', [SmsController::class, 'testSend']);

@@ -42,6 +42,15 @@
 
 
 <body class="fixed-header sidebar-expand-lg sidebar-open bg-body-tertiary">
+    @php
+        $reportsMenuOpen = request()->routeIs(
+            'admin.reports.court_sms_dashboard',
+            'admin.reports.court_sms_dashboard.*',
+            'admin.reports.detailed',
+            'admin.analytics.overview',
+            'admin.analytics.sms.summary'
+        );
+    @endphp
     <div class="app-wrapper">
         {{-- <nav class="app-header navbar navbar-expand bg-body"> --}}
         <nav class="app-header navbar navbar-expand bg-success-subtle" data-bs-theme="light">
@@ -215,12 +224,48 @@
                     <ul class="nav sidebar-menu flex-column" data-lte-toggle="treeview" role="navigation"
                         aria-label="Main navigation" data-accordion="false" id="navigation">
 
-                        <!-- Dashboard -->
                         <li class="nav-item">
-                            <a href="{{ route('admin.dashboard') }}" class="nav-link">
+                            <a href="{{ route('admin.dashboard') }}" class="nav-link {{ request()->routeIs('admin.dashboard') ? 'active' : '' }}">
                                 <i class="nav-icon bi bi-speedometer"></i>
                                 <p>{{ __('messages.dashboard') }}</p>
                             </a>
+                        </li>
+
+                        <li class="nav-item d-none">
+                            <a href="{{ route('admin.analytics.overview') }}" class="nav-link">
+                                <i class="nav-icon bi bi-graph-up-arrow"></i>
+                                <p>{{ app()->getLocale() === 'bn' ? 'বিশ্লেষণ' : 'Analytics Overview' }}</p>
+                            </a>
+                        </li>
+
+                        <li class="nav-item d-none {{ $reportsMenuOpen ? 'menu-open' : '' }}">
+                            <a href="#" class="nav-link {{ $reportsMenuOpen ? 'active' : '' }}">
+                                <i class="nav-icon bi bi-bar-chart-line"></i>
+                                <p>
+                                    {{ app()->getLocale() === 'bn' ? 'রিপোর্ট ও বিশ্লেষণ' : 'Reports & Analytics' }}
+                                    <i class="nav-arrow bi bi-chevron-right"></i>
+                                </p>
+                            </a>
+                            <ul class="nav nav-treeview">
+                                <li class="nav-item">
+                                    <a href="{{ route('admin.reports.court_sms_dashboard') }}" class="nav-link {{ request()->routeIs('admin.reports.court_sms_dashboard', 'admin.reports.court_sms_dashboard.report') ? 'active' : '' }}">
+                                        <i class="nav-icon bi bi-grid-1x2"></i>
+                                        <p>{{ app()->getLocale() === 'bn' ? 'কোর্ট এসএমএস ড্যাশবোর্ড' : 'Court SMS Dashboard' }}</p>
+                                    </a>
+                                </li>
+                                <li class="nav-item">
+                                    <a href="{{ route('admin.analytics.overview') }}" class="nav-link {{ request()->routeIs('admin.analytics.overview', 'admin.analytics.sms.summary') ? 'active' : '' }}">
+                                        <i class="nav-icon bi bi-graph-up-arrow"></i>
+                                        <p>{{ app()->getLocale() === 'bn' ? 'অ্যানালিটিক্স ওভারভিউ' : 'Analytics Overview' }}</p>
+                                    </a>
+                                </li>
+                                <li class="nav-item">
+                                    <a href="{{ route('admin.reports.detailed') }}" class="nav-link {{ request()->routeIs('admin.reports.detailed') ? 'active' : '' }}">
+                                        <i class="nav-icon bi bi-files"></i>
+                                        <p>{{ app()->getLocale() === 'bn' ? 'বিস্তারিত রিপোর্ট' : 'Detailed Reports' }}</p>
+                                    </a>
+                                </li>
+                            </ul>
                         </li>
 
                         <!-- User Management -->
@@ -359,6 +404,29 @@
                             </li>
                         @endcanany
 
+                        <li class="nav-item {{ $reportsMenuOpen ? 'menu-open' : '' }}">
+                            <a href="#" class="nav-link {{ $reportsMenuOpen ? 'active' : '' }}">
+                                <i class="nav-icon bi bi-bar-chart-line"></i>
+                                <p>
+                                    {{ app()->getLocale() === 'bn' ? 'রিপোর্ট ও বিশ্লেষণ' : 'Reports & Analytics' }}
+                                    <i class="nav-arrow bi bi-chevron-right"></i>
+                                </p>
+                            </a>
+                            <ul class="nav nav-treeview">
+                                <li class="nav-item">
+                                    <a href="{{ route('admin.analytics.overview') }}" class="nav-link {{ request()->routeIs('admin.analytics.overview', 'admin.analytics.sms.summary') ? 'active' : '' }}">
+                                        <i class="nav-icon bi bi-graph-up-arrow"></i>
+                                        <p>{{ app()->getLocale() === 'bn' ? 'অ্যানালিটিক্স ওভারভিউ' : 'Analytics Overview' }}</p>
+                                    </a>
+                                </li>
+                                <li class="nav-item">
+                                    <a href="{{ route('admin.reports.detailed') }}" class="nav-link {{ request()->routeIs('admin.reports.detailed') ? 'active' : '' }}">
+                                        <i class="nav-icon bi bi-files"></i>
+                                        <p>{{ app()->getLocale() === 'bn' ? 'বিস্তারিত রিপোর্ট' : 'Detailed Reports' }}</p>
+                                    </a>
+                                </li>
+                            </ul>
+                        </li>
 
                         <!-- Logout -->
                         @auth

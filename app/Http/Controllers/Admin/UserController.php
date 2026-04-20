@@ -25,6 +25,29 @@ class UserController extends Controller
         $this->middleware('permission:View User Permissions')->only(['destroy']);
     }
 
+    protected function scopedDivisions($loggedInUser)
+    {
+        if ($loggedInUser->court_id) {
+            return Division::with([
+                'districts' => fn($q) => $q->where('id', $loggedInUser->district_id),
+                'districts.courts' => fn($q) => $q->where('id', $loggedInUser->court_id),
+            ])->where('id', $loggedInUser->division_id)->get();
+        }
+
+        if ($loggedInUser->district_id) {
+            return Division::with([
+                'districts' => fn($q) => $q->where('id', $loggedInUser->district_id),
+                'districts.courts'
+            ])->where('id', $loggedInUser->division_id)->get();
+        }
+
+        if ($loggedInUser->division_id) {
+            return Division::with('districts.courts')->where('id', $loggedInUser->division_id)->get();
+        }
+
+        return Division::with('districts.courts')->get();
+    }
+
     public function index(Request $request)
     {
         $loggedInUser = Auth::user();
@@ -34,6 +57,9 @@ class UserController extends Controller
         // ================= ROLE VISIBILITY RULES (UNCHANGED) =================
         if ($loggedInUser->hasRole('Super Admin')) {
             // see all
+        } elseif ($loggedInUser->court_id) {
+            $query->where('court_id', $loggedInUser->court_id)
+                ->whereDoesntHave('roles', fn($q) => $q->where('name', 'Super Admin'));
         } elseif (is_null($loggedInUser->district_id)) {
             $query->whereDoesntHave('roles', fn($q) => $q->where('name', 'Super Admin'));
         } else {
@@ -89,7 +115,7 @@ class UserController extends Controller
 
         // Filter data
         $roles = Role::where('name', '!=', 'Super Admin')->get();
-        $divisions = Division::with('districts.courts')->get();
+        $divisions = $this->scopedDivisions($loggedInUser);
 
         return view('admin.rbac.users.index', compact('users', 'roles', 'divisions'));
     }
@@ -105,14 +131,7 @@ class UserController extends Controller
 
         $permissionGroups = PermissionGroup::with('permissions')->get();
 
-        // District assignment logic
-        if ($loggedInUser->district_id) {
-            // District admin → only their district
-            $divisions = Division::with(['districts' => fn($q) => $q->where('id', $loggedInUser->district_id), 'districts.courts'])->get();
-        } else {
-            // Ministry / Super Admin → all divisions/districts
-            $divisions = Division::with('districts.courts')->get();
-        }
+        $divisions = $this->scopedDivisions($loggedInUser);
 
         $userRoles = [];
         $directPermissions = [];
@@ -143,9 +162,16 @@ class UserController extends Controller
             'permissions' => 'array',
         ]);
 
-        // District restriction for district admins
+        if ($loggedInUser->court_id && $request->court_id != $loggedInUser->court_id) {
+            abort(403, 'Unauthorized to assign user to another court.');
+        }
+
         if ($loggedInUser->district_id && $request->district_id != $loggedInUser->district_id) {
             abort(403, 'Unauthorized to assign user to another district.');
+        }
+
+        if ($loggedInUser->division_id && $request->division_id != $loggedInUser->division_id) {
+            abort(403, 'Unauthorized to assign user to another division.');
         }
 
         $user = User::create([
@@ -189,6 +215,13 @@ class UserController extends Controller
 
         // District restriction
         if (
+            !$loggedInUser->hasRole('Super Admin') && $loggedInUser->court_id
+            && $user->court_id !== $loggedInUser->court_id
+        ) {
+            abort(403, 'Unauthorized to edit users from other courts.');
+        }
+
+        if (
             !$loggedInUser->hasRole('Super Admin') && $loggedInUser->district_id
             && $user->district_id !== $loggedInUser->district_id
         ) {
@@ -201,19 +234,7 @@ class UserController extends Controller
 
         $permissionGroups = PermissionGroup::with('permissions')->get();
 
-        // District assignment logic (fixed)
-        if ($loggedInUser->district_id) {
-            $divisions = Division::whereHas('districts', function ($q) use ($loggedInUser) {
-                $q->where('id', $loggedInUser->district_id);
-            })
-                ->with([
-                    'districts' => fn($q) => $q->where('id', $loggedInUser->district_id),
-                    'districts.courts'
-                ])
-                ->get();
-        } else {
-            $divisions = Division::with('districts.courts')->get();
-        }
+        $divisions = $this->scopedDivisions($loggedInUser);
 
         $userRoles = $user->roles->pluck('name')->toArray();
         $directPermissions = $user->permissions->pluck('name')->toArray();
@@ -242,15 +263,29 @@ class UserController extends Controller
 
         // District restriction
         if (
+            !$loggedInUser->hasRole('Super Admin') && $loggedInUser->court_id
+            && $user->court_id !== $loggedInUser->court_id
+        ) {
+            abort(403, 'Unauthorized to update users from other courts.');
+        }
+
+        if (
             !$loggedInUser->hasRole('Super Admin') && $loggedInUser->district_id
             && $user->district_id !== $loggedInUser->district_id
         ) {
             abort(403, 'Unauthorized to update users from other districts.');
         }
 
-        // District restriction for update assignment
+        if ($loggedInUser->court_id && $request->court_id != $loggedInUser->court_id) {
+            abort(403, 'Unauthorized to assign user to another court.');
+        }
+
         if ($loggedInUser->district_id && $request->district_id != $loggedInUser->district_id) {
             abort(403, 'Unauthorized to assign user to another district.');
+        }
+
+        if ($loggedInUser->division_id && $request->division_id != $loggedInUser->division_id) {
+            abort(403, 'Unauthorized to assign user to another division.');
         }
 
         $request->validate([
@@ -310,6 +345,13 @@ class UserController extends Controller
         }
 
         // District restriction
+        if (
+            !$loggedInUser->hasRole('Super Admin') && $loggedInUser->court_id
+            && $user->court_id !== $loggedInUser->court_id
+        ) {
+            abort(403, 'Unauthorized to delete users from other courts.');
+        }
+
         if (
             !$loggedInUser->hasRole('Super Admin') && $loggedInUser->district_id
             && $user->district_id !== $loggedInUser->district_id

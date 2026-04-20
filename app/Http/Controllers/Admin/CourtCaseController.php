@@ -20,6 +20,14 @@ class CourtCaseController extends Controller
 {
     protected SmsService $smsService;
 
+    protected function canUseSendNow(string $hearingDate): bool
+    {
+        $date = Carbon::parse($hearingDate)->startOfDay();
+        $today = now()->startOfDay();
+
+        return $date->betweenIncluded($today, $today->copy()->addDays(3));
+    }
+
     public function __construct(SmsService $smsService)
     {
         $this->middleware('permission:SMS Form')->only(['createAndSend']);
@@ -34,12 +42,21 @@ class CourtCaseController extends Controller
     {
         $user = Auth::user();
 
-        $divisions = $user->district_id
-            ? Division::with([
+        if ($user->court_id) {
+            $divisions = Division::with([
+                'districts' => fn ($q) => $q->where('id', $user->district_id),
+                'districts.courts' => fn ($q) => $q->where('id', $user->court_id),
+            ])->where('id', $user->division_id)->get();
+        } elseif ($user->district_id) {
+            $divisions = Division::with([
                 'districts' => fn ($q) => $q->where('id', $user->district_id),
                 'districts.courts'
-            ])->get()
-            : Division::with('districts.courts')->get();
+            ])->where('id', $user->division_id)->get();
+        } elseif ($user->division_id) {
+            $divisions = Division::with('districts.courts')->where('id', $user->division_id)->get();
+        } else {
+            $divisions = Division::with('districts.courts')->get();
+        }
 
         $templates = MessageTemplate::where('is_active', true)->get();
 
@@ -51,6 +68,7 @@ class CourtCaseController extends Controller
      */
     public function storeAndSend(Request $request)
     {
+        $user = Auth::user();
         $request->validate([
             'division_id'       => 'required|exists:divisions,id',
             'district_id'       => 'required|exists:districts,id',
@@ -62,6 +80,27 @@ class CourtCaseController extends Controller
             'witnesses.*.phone' => ['required', 'regex:/^01\d{9}$/'],
             'schedules'         => 'required|array|min:1',
         ]);
+
+        if ($user->court_id && (int) $request->court_id !== (int) $user->court_id) {
+            abort(403, 'Unauthorized to create case for another court.');
+        }
+
+        if ($user->district_id && (int) $request->district_id !== (int) $user->district_id) {
+            abort(403, 'Unauthorized to create case for another district.');
+        }
+
+        if ($user->division_id && (int) $request->division_id !== (int) $user->division_id) {
+            abort(403, 'Unauthorized to create case for another division.');
+        }
+
+        if (in_array('send_now', $request->input('schedules', []), true) && !$this->canUseSendNow($request->hearing_date)) {
+            return response()->json([
+                'success' => false,
+                'message' => app()->getLocale() === 'bn'
+                    ? 'Send Now শুধু আজ থেকে পরবর্তী ৩ দিনের শুনানির জন্য ব্যবহার করা যাবে।'
+                    : 'Send Now can be used only when the hearing date is within the next 3 days.',
+            ], 422);
+        }
 
         DB::beginTransaction();
 

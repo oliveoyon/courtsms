@@ -127,6 +127,7 @@
                         <input type="checkbox" class="btn-check" name="schedules[]" id="schedNow" value="send_now">
                         <label class="btn btn-outline-success btn-sm" for="schedNow">{{ __('case.send_now') }}</label>
                     </div>
+                    <small id="sendNowHelp" class="d-block mt-2 text-muted"></small>
                 </div>
 
                 <!-- Preview -->
@@ -147,7 +148,17 @@ document.addEventListener('DOMContentLoaded', function() {
     const divisionSelect = document.getElementById('division_id');
     const districtSelect = document.getElementById('district_id');
     const courtSelect = document.getElementById('court_id');
+    const hearingDateInput = document.getElementById('hearingDate');
+    const sendNowCheckbox = document.getElementById('schedNow');
+    const sendNowLabel = document.querySelector('label[for="schedNow"]');
+    const sendNowHelp = document.getElementById('sendNowHelp');
     const locale = '{{ app()->getLocale() }}'; // 'en' or 'bn'
+    const sendNowActiveText = locale === 'bn'
+        ? 'Send Now শুধু আজ থেকে পরবর্তী ৩ দিনের শুনানির জন্য চালু থাকবে।'
+        : 'Send Now is available only when the hearing date is within the next 3 days.';
+    const sendNowDisabledText = locale === 'bn'
+        ? 'নির্বাচিত শুনানির তারিখ ৩ দিনের সীমার বাইরে, তাই Send Now বন্ধ আছে।'
+        : 'Send Now is disabled because the selected hearing date is outside the next 3 days.';
 
     // --------------------------
     // Division -> District
@@ -291,10 +302,38 @@ document.addEventListener('DOMContentLoaded', function() {
         document.getElementById('previewMessage').innerHTML = html || 'Enter details to see preview.';
     }
 
+    function updateSendNowState() {
+        if (!hearingDateInput || !sendNowCheckbox || !sendNowLabel || !sendNowHelp) return;
+
+        const value = hearingDateInput.value;
+        let allowed = false;
+
+        if (value) {
+            const selected = new Date(`${value}T00:00:00`);
+            const today = new Date();
+            today.setHours(0, 0, 0, 0);
+            const maxDate = new Date(today);
+            maxDate.setDate(maxDate.getDate() + 3);
+            allowed = selected >= today && selected <= maxDate;
+        }
+
+        sendNowCheckbox.disabled = !allowed;
+        sendNowLabel.classList.toggle('disabled', !allowed);
+        sendNowLabel.classList.toggle('opacity-50', !allowed);
+        sendNowLabel.classList.toggle('btn-outline-secondary', !allowed);
+        sendNowLabel.classList.toggle('btn-outline-success', allowed);
+        sendNowHelp.textContent = allowed ? sendNowActiveText : sendNowDisabledText;
+
+        if (!allowed) {
+            sendNowCheckbox.checked = false;
+        }
+    }
+
     attachWitnessListeners();
     ['input','change'].forEach(evt => {
         document.getElementById('caseNo')?.addEventListener(evt, updatePreview);
         document.getElementById('hearingDate')?.addEventListener(evt, updatePreview);
+        document.getElementById('hearingDate')?.addEventListener(evt, updateSendNowState);
         document.querySelector('#witnessTable')?.addEventListener(evt, updatePreview);
     });
 
@@ -351,6 +390,7 @@ document.addEventListener('DOMContentLoaded', function() {
         .finally(()=>{ btn.disabled = false; isSubmitting = false; });
     });
 
+    updateSendNowState();
 });
 </script>
 @endpush

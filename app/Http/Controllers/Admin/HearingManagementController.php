@@ -16,6 +16,14 @@ use Mpdf\Config\FontVariables;
 
 class HearingManagementController extends Controller
 {
+    protected function canUseSendNow(Carbon $hearingDate): bool
+    {
+        $date = $hearingDate->copy()->startOfDay();
+        $today = now()->startOfDay();
+
+        return $date->betweenIncluded($today, $today->copy()->addDays(3));
+    }
+
     public function __construct()
     {
         // Hearing list & filtering
@@ -28,6 +36,34 @@ class HearingManagementController extends Controller
         $this->middleware('permission:Print Hearing Attendance')->only(['print']);
     }
 
+    protected function applyUserScope($query, $user)
+    {
+        if ($user->court_id) {
+            $query->whereHas('case.court', fn($q) => $q->where('id', $user->court_id));
+        } elseif ($user->district_id) {
+            $query->whereHas('case.court.district', fn($q) => $q->where('id', $user->district_id));
+        } elseif ($user->division_id) {
+            $query->whereHas('case.court.district.division', fn($q) => $q->where('id', $user->division_id));
+        }
+
+        return $query;
+    }
+
+    protected function authorizeHearingAccess(CaseHearing $hearing, $user): void
+    {
+        if ($user->court_id && $hearing->case->court_id != $user->court_id) {
+            abort(403, 'Unauthorized.');
+        }
+
+        if ($user->district_id && $hearing->case->court->district_id != $user->district_id) {
+            abort(403, 'Unauthorized.');
+        }
+
+        if ($user->division_id && $hearing->case->court->district->division_id != $user->division_id) {
+            abort(403, 'Unauthorized.');
+        }
+    }
+
     public function index(Request $request)
     {
         $user = Auth::user();
@@ -37,11 +73,7 @@ class HearingManagementController extends Controller
             ->whereDate('hearing_date', $date);
 
         // Multi-user restriction
-        if ($user->district_id) {
-            $query->whereHas('case.court.district', fn($q) => $q->where('id', $user->district_id));
-        } elseif ($user->division_id) {
-            $query->whereHas('case.court.district.division', fn($q) => $q->where('id', $user->division_id));
-        }
+        $this->applyUserScope($query, $user);
 
         // Filters
         if ($request->division_id) {
@@ -58,12 +90,21 @@ class HearingManagementController extends Controller
 
         $hearings = $query->orderBy('hearing_time')->get();
 
-        $divisions = $user->district_id
-            ? Division::with([
+        if ($user->court_id) {
+            $divisions = Division::with([
+                'districts' => fn($q) => $q->where('id', $user->district_id),
+                'districts.courts' => fn($q) => $q->where('id', $user->court_id),
+            ])->where('id', $user->division_id)->get();
+        } elseif ($user->district_id) {
+            $divisions = Division::with([
                 'districts' => fn($q) => $q->where('id', $user->district_id),
                 'districts.courts'
-            ])->get()
-            : Division::with('districts.courts')->get();
+            ])->where('id', $user->division_id)->get();
+        } elseif ($user->division_id) {
+            $divisions = Division::with('districts.courts')->where('id', $user->division_id)->get();
+        } else {
+            $divisions = Division::with('districts.courts')->get();
+        }
 
         return view('admin.hearings.index', compact('hearings', 'date', 'divisions', 'user', 'request'));
     }
@@ -76,12 +117,7 @@ class HearingManagementController extends Controller
         $hearing = CaseHearing::with(['case', 'case.witnesses'])->findOrFail($hearingId);
 
         $user = Auth::user();
-        if ($user->division_id && $hearing->case->court->district->division_id != $user->division_id) {
-            abort(403, 'Unauthorized.');
-        }
-        if ($user->district_id && $hearing->case->court->district_id != $user->district_id) {
-            abort(403, 'Unauthorized.');
-        }
+        $this->authorizeHearingAccess($hearing, $user);
 
         return view('admin.hearings.attendance', compact('hearing'));
     }
@@ -107,6 +143,7 @@ class HearingManagementController extends Controller
         ]);
 
         $hearing = CaseHearing::with('witnesses')->findOrFail($hearingId);
+        $this->authorizeHearingAccess($hearing->load('case.court.district'), Auth::user());
 
         DB::transaction(function () use ($request, $hearing) {
             foreach ($request->attendance as $witnessId => $status) {
@@ -136,13 +173,7 @@ class HearingManagementController extends Controller
 
         // dd($hearing);
 
-        $user = Auth::user();
-        if ($user->division_id && $hearing->case->court->district->division_id != $user->division_id) {
-            abort(403, 'Unauthorized.');
-        }
-        if ($user->district_id && $hearing->case->court->district_id != $user->district_id) {
-            abort(403, 'Unauthorized.');
-        }
+        $this->authorizeHearingAccess($hearing, Auth::user());
 
         return view('admin.hearings.reschedule', compact('hearing'));
     }
@@ -161,9 +192,19 @@ class HearingManagementController extends Controller
             'schedules' => 'nullable|array', // optional schedules for SMS
         ]);
 
-        $oldHearing = CaseHearing::with('case.witnesses')->findOrFail($hearingId);
+        $oldHearing = CaseHearing::with('case.witnesses', 'case.court.district')->findOrFail($hearingId);
+        $this->authorizeHearingAccess($oldHearing, Auth::user());
         $oldDate = Carbon::parse($oldHearing->hearing_date);
         $newDate = Carbon::parse($request->new_date);
+
+        if (in_array('send_now', $request->input('schedules', []), true) && !$this->canUseSendNow($newDate)) {
+            return response()->json([
+                'status' => 'error',
+                'message' => app()->getLocale() === 'bn'
+                    ? 'Send Now শুধু আজ থেকে পরবর্তী ৩ দিনের শুনানির জন্য ব্যবহার করা যাবে।'
+                    : 'Send Now can be used only when the hearing date is within the next 3 days.',
+            ], 422);
+        }
 
         // Prevent saving if date is same as old
         if ($newDate->toDateString() === $oldDate->toDateString()) {
@@ -288,12 +329,27 @@ class HearingManagementController extends Controller
      */
     public function print(Request $request)
     {
+        $user = Auth::user();
         $date = $request->date ?? now()->toDateString();
 
-        $hearings = CaseHearing::with(['case.court', 'witnesses'])
-            ->whereDate('hearing_date', $date)
-            ->orderBy('hearing_time')
-            ->get();
+        $query = CaseHearing::with(['case.court', 'witnesses'])
+            ->whereDate('hearing_date', $date);
+
+        $this->applyUserScope($query, $user);
+
+        if ($request->division_id) {
+            $query->whereHas('case.court.district.division', fn($q) => $q->where('id', $request->division_id));
+        }
+
+        if ($request->district_id) {
+            $query->whereHas('case.court.district', fn($q) => $q->where('id', $request->district_id));
+        }
+
+        if ($request->court_id) {
+            $query->whereHas('case.court', fn($q) => $q->where('id', $request->court_id));
+        }
+
+        $hearings = $query->orderBy('hearing_time')->get();
 
         $html = view('admin.hearings.print', compact('hearings', 'date'))->render();
 
