@@ -18,7 +18,7 @@ use App\Services\SmsService;
 
 class CourtCaseController extends Controller
 {
-    protected SmsService $smsService;
+   // protected SmsService $smsService;
 
     protected function canUseSendNow(string $hearingDate): bool
     {
@@ -28,12 +28,11 @@ class CourtCaseController extends Controller
         return $date->betweenIncluded($today, $today->copy()->addDays(3));
     }
 
-    public function __construct(SmsService $smsService)
-    {
-        $this->middleware('permission:SMS Form')->only(['createAndSend']);
-        $this->middleware('permission:Send SMS')->only(['storeAndSend']);
-        $this->smsService = $smsService;
-    }
+   public function __construct()
+{
+    $this->middleware('permission:SMS Form')->only(['createAndSend']);
+    $this->middleware('permission:Send SMS')->only(['storeAndSend']);
+}
 
     /**
      * Show create + send form
@@ -66,7 +65,7 @@ class CourtCaseController extends Controller
     /**
      * Store case, hearing, witnesses and send notifications
      */
-    public function storeAndSend(Request $request)
+   public function storeAndSend(Request $request, SmsService $smsService)
     {
         $user = Auth::user();
         $request->validate([
@@ -208,7 +207,7 @@ class CourtCaseController extends Controller
                         /* =====================================================
                          * 🔴 REAL SMS (COMMENTED — UNBLOCK LATER)
                          * ===================================================== */
-                        $smsResponse = $this->smsService->send([
+                        $smsResponse = $smsService->send([
                             [
                                 'to' => '88' . $witness->phone,
                                 'message' => $message,

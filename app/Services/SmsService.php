@@ -17,12 +17,12 @@ class SmsService
 
     public function __construct()
     {
-        $this->tokenUrl     = env('SMS_API_URL_FOR_TOKEN');
-        $this->smsUrl       = env('SMS_API_URL_FOR_SEND');
-        $this->clientId     = env('SMS_CLIENT_ID');
-        $this->clientSecret = env('SMS_CLIENT_SECRET');
-        $this->grantType    = env('SMS_GRANT_TYPE', 'client_credentials');
-        $this->retryCount   = env('SMS_RETRY_COUNT', 2); // number of retries for failed SMS
+     $this->tokenUrl     = config('services.sms.token_url');
+$this->smsUrl       = config('services.sms.send_url');
+$this->clientId     = config('services.sms.client_id');
+$this->clientSecret = config('services.sms.client_secret');
+$this->grantType    = config('services.sms.grant_type');
+$this->retryCount   = (int) config('services.sms.retry_count', 2);
     }
 
     /**

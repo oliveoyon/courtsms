@@ -35,4 +35,13 @@ return [
         ],
     ],
 
+    'sms' => [
+    'token_url'     => env('SMS_API_URL_FOR_TOKEN'),
+    'send_url'      => env('SMS_API_URL_FOR_SEND'),
+    'client_id'     => env('SMS_CLIENT_ID'),
+    'client_secret' => env('SMS_CLIENT_SECRET'),
+    'grant_type'    => env('SMS_GRANT_TYPE', 'client_credentials'),
+    'retry_count'   => env('SMS_RETRY_COUNT', 2),
+],
+
 ];
