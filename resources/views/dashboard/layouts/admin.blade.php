@@ -511,15 +511,15 @@
                     // Find the closest nav-treeview (submenu)
                     let parentTree = link.closest('.nav-treeview');
                     if (parentTree) {
-                        // Expand this submenu
-                        parentTree.style.display = 'block';
-
                         // Find the parent <li> with treeview
                         const parentItem = parentTree.closest('.nav-item');
                         if (parentItem) {
-                            parentItem.classList.add('menu-open'); // keep it open
                             const parentLink = parentItem.querySelector(':scope > a.nav-link');
                             if (parentLink) parentLink.classList.add('active'); // highlight parent link
+
+                            // Expand this submenu
+                            parentTree.style.display = 'block';
+                            parentItem.classList.add('menu-open');
                         }
 
                         // Repeat for multi-level menus

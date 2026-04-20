@@ -31,7 +31,7 @@ class HearingManagementController extends Controller
         // Attendance
         $this->middleware('permission:Take Hearing Attendance')->only(['attendanceForm', 'storeAttendance']);
         // Reschedule
-        $this->middleware('permission:Reschedule Hearing')->only(['rescheduleForm', 'storeReschedule']);
+        $this->middleware('permission:Reschedule Hearing')->only(['editForm', 'updateWitnessInfo', 'rescheduleForm', 'storeReschedule']);
         // Print
         $this->middleware('permission:Print Hearing Attendance')->only(['print']);
     }
@@ -69,7 +69,7 @@ class HearingManagementController extends Controller
         $user = Auth::user();
         $date = $request->date ?? now()->toDateString();
 
-        $query = CaseHearing::with(['case.court', 'case.witnesses'])
+        $query = CaseHearing::with(['case.court.district', 'case.witnesses'])
             ->whereDate('hearing_date', $date);
 
         // Multi-user restriction
@@ -176,6 +176,53 @@ class HearingManagementController extends Controller
         $this->authorizeHearingAccess($hearing, Auth::user());
 
         return view('admin.hearings.reschedule', compact('hearing'));
+    }
+
+    public function editForm(Request $request, $hearingId)
+    {
+        $hearing = CaseHearing::with(['case.court', 'witnesses'])->findOrFail($hearingId);
+
+        $this->authorizeHearingAccess($hearing->load('case.court.district'), Auth::user());
+
+        return view('admin.hearings.edit', compact('hearing'));
+    }
+    public function updateWitnessInfo(Request $request, $hearingId)
+    {
+        $request->validate([
+            'witnesses' => 'required|array|min:1',
+            'witnesses.*.id' => 'required|integer',
+            'witnesses.*.name' => 'required|string|max:255',
+            'witnesses.*.phone' => ['required', 'regex:/^01\\d{9}$/'],
+        ]);
+
+        $hearing = CaseHearing::with(['case.court.district', 'witnesses'])->findOrFail($hearingId);
+        $this->authorizeHearingAccess($hearing, Auth::user());
+
+        $validWitnessIds = $hearing->witnesses->pluck('id')->map(fn ($id) => (int) $id)->all();
+        foreach ($request->witnesses as $witnessData) {
+            if (!in_array((int) $witnessData['id'], $validWitnessIds, true)) {
+                abort(403, 'Unauthorized.');
+            }
+        }
+
+        DB::transaction(function () use ($request, $hearing) {
+            $witnessesById = $hearing->witnesses->keyBy('id');
+
+            foreach ($request->witnesses as $witnessData) {
+                $witness = $witnessesById[(int) $witnessData['id']];
+                $witness->update([
+                    'name' => $witnessData['name'],
+                    'phone' => $witnessData['phone'],
+                ]);
+            }
+        });
+
+        return response()->json([
+            'status' => 'success',
+            'message' => app()->getLocale() === 'bn'
+                ? '??????? ???? ??????? ???????? ???????'
+                : 'Witness information updated successfully.',
+        ]);
     }
 
     /**

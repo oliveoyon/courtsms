@@ -104,6 +104,7 @@
                 <thead class="table-light">
                     <tr>
                         <th>{{ __('case.case_no') }}</th>
+                        <th>{{ __('case.district') }}</th>
                         <th>{{ __('case.court') }}</th>
                         <th>{{ __('case.hearing_time') }}</th>
                         <th>{{ __('case.witness_count') }}</th>
@@ -115,6 +116,10 @@
                     @forelse($hearings as $hearing)
                         <tr>
                             <td>{{ $hearing->case->case_no }}</td>
+                            <td>
+                                @php($district = $hearing->case->court->district)
+                                {{ app()->getLocale() === 'bn' ? ($district->name_bn ?? $district->name ?? '-') : ($district->name_en ?? $district->name ?? '-') }}
+                            </td>
                             <td>{{ $hearing->case->court->name }}</td>
                             <td>{{ $hearing->hearing_time ?? '-' }}</td>
                             <td>{{ $hearing->witnesses->count() }}</td>
@@ -136,6 +141,15 @@
 
                                 {{-- Reschedule Button --}}
                                 <form method="POST"
+                                    action="{{ route('admin.hearings.edit.start', $hearing->id) }}"
+                                    style="display:inline">
+                                    @csrf
+                                    <button type="submit" class="btn btn-sm btn-info mb-1">
+                                        {{ app()->getLocale() === 'bn' ? 'তথ্য সংশোধন' : 'Edit Info' }}
+                                    </button>
+                                </form>
+
+                                <form method="POST"
                                     action="{{ route('admin.hearings.reschedule.start', $hearing->id) }}"
                                     class="rescheduleForm" style="display:inline">
                                     @csrf
@@ -145,7 +159,7 @@
                         </tr>
                     @empty
                         <tr>
-                            <td colspan="6" class="text-center text-muted">{{ __('case.no_hearings_found') }}</td>
+                            <td colspan="7" class="text-center text-muted">{{ __('case.no_hearings_found') }}</td>
                         </tr>
                     @endforelse
                 </tbody>

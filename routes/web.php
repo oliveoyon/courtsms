@@ -64,8 +64,10 @@ Route::prefix('admin')->name('admin.')->middleware(['auth'])->group(function () 
     Route::post('cases/create-and-send', [CourtCaseController::class, 'storeAndSend'])->name('cases.store_send');
     Route::match(['get', 'post'], '/hearings', [HearingManagementController::class, 'index'])->name('hearings.index');
     Route::post('/hearings/{hearing}/attendance/start', [HearingManagementController::class, 'attendanceForm'])->name('hearings.attendance.start');
+    Route::post('/hearings/{hearing}/edit/start', [HearingManagementController::class, 'editForm'])->name('hearings.edit.start');
     Route::post('/hearings/{hearing}/reschedule/start', [HearingManagementController::class, 'rescheduleForm'])->name('hearings.reschedule.start');
     Route::post('/hearings/{hearing}/attendance', [HearingManagementController::class, 'storeAttendance'])->name('hearings.attendance.store');
+    Route::post('/hearings/{hearing}/edit', [HearingManagementController::class, 'updateWitnessInfo'])->name('hearings.edit.store');
     Route::post('/hearings/{hearing}/reschedule', [HearingManagementController::class, 'storeReschedule'])->name('hearings.reschedule.store');
     Route::post('/hearings/print', [HearingManagementController::class, 'print'])->name('hearings.print');
 
