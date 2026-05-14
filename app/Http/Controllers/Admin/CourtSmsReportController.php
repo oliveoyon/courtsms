@@ -399,9 +399,9 @@ class CourtSmsReportController extends Controller
                     COUNT(DISTINCT c.id) as total_cases,
                     COUNT(DISTINCT h.id) as total_hearings,
                     SUM(CASE WHEN n.status IN ('sent', 'delivered') THEN 1 ELSE 0 END) as sent,
-                    SUM(CASE WHEN n.status = 'pending' THEN 1 ELSE 0 END) as pending,
+                    SUM(CASE WHEN n.status IN ('pending', 'queued', 'processing') THEN 1 ELSE 0 END) as pending,
                     SUM(CASE WHEN n.status = 'failed' THEN 1 ELSE 0 END) as failed,
-                    COUNT(n.id) as total_sms_sent
+                    SUM(CASE WHEN n.status IN ('sent', 'delivered', 'pending', 'queued', 'processing', 'failed') THEN 1 ELSE 0 END) as total_sms_sent
                 ")
                 ->groupByRaw("DATE_FORMAT(c.created_at, '%Y-%m'), DATE_FORMAT(c.created_at, '%b %Y'), {$localizedDivision}, {$localizedDistrict}")
                 ->orderBy('sort_month')
@@ -552,9 +552,9 @@ class CourtSmsReportController extends Controller
             ->leftJoin('notifications as n', 'n.schedule_id', '=', 'ns.id')
             ->selectRaw("
                 ns.hearing_id,
-                COUNT(n.id) as total_sms_sent,
+                SUM(CASE WHEN n.status IN ('sent', 'delivered', 'pending', 'queued', 'processing', 'failed') THEN 1 ELSE 0 END) as total_sms_sent,
                 SUM(CASE WHEN n.status IN ('sent', 'delivered') THEN 1 ELSE 0 END) as sent,
-                SUM(CASE WHEN n.status = 'pending' THEN 1 ELSE 0 END) as pending,
+                SUM(CASE WHEN n.status IN ('pending', 'queued', 'processing') THEN 1 ELSE 0 END) as pending,
                 SUM(CASE WHEN n.status = 'failed' THEN 1 ELSE 0 END) as failed
             ")
             ->groupBy('ns.hearing_id');
